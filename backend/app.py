@@ -67,7 +67,9 @@ def create_app(config_class=Config):
             )
 
     # Reverse proxy support (ProxyFix)
-    trusted_proxies = app.config.get('TRUSTED_PROXIES', 1 if env == 'production' else 0)
+    trusted_proxies = app.config.get('TRUSTED_PROXIES')
+    if trusted_proxies is None or (env == 'production' and trusted_proxies <= 0):
+        trusted_proxies = 1 if env == 'production' else 0
     if trusted_proxies > 0:
         app.wsgi_app = ProxyFix(
             app.wsgi_app,

@@ -9,8 +9,9 @@ services:
     runtime: python
     plan: free
     region: oregon
-    buildCommand: pip install --upgrade pip && pip install -r requirements.txt && python database/init_db.py
-    startCommand: gunicorn --workers 2 --timeout 90 --bind 0.0.0.0:$PORT app:app
+    buildCommand: pip install -r requirements.txt && python database/init_db.py
+    startCommand: gunicorn --workers 2 --threads 2 --timeout 90 --bind 0.0.0.0:$PORT app:app
+    healthCheckPath: /health
     envVars:
       - key: PYTHON_VERSION
         value: 3.12.8
@@ -29,4 +30,6 @@ services:
       - key: ADMIN_PASSWORD
         sync: false
       - key: ADMIN_EMAIL
+        sync: false
+      - key: RATELIMIT_STORAGE_URI
         sync: false

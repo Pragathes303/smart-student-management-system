@@ -43,8 +43,8 @@ class Config:
     # Base URL for email notification links and web hooks
     APP_BASE_URL = os.getenv('APP_BASE_URL', 'http://127.0.0.1:5000').rstrip('/')
 
-    # Reverse proxy trusted count (e.g. 1 behind Nginx or AWS ALB)
-    TRUSTED_PROXIES = int(os.getenv('TRUSTED_PROXIES', '0'))
+    # Reverse proxy trusted count (1 behind Render, Nginx, or AWS ALB)
+    TRUSTED_PROXIES = int(os.getenv('TRUSTED_PROXIES', '1' if ENV == 'production' else '0'))
 
     # CSRF Protection via Flask-WTF
     WTF_CSRF_ENABLED = os.getenv('WTF_CSRF_ENABLED', '1') == '1'

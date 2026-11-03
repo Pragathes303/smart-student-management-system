@@ -24,7 +24,7 @@ app = create_app()
 
 if __name__ == '__main__':
     host = os.getenv('FLASK_HOST', '127.0.0.1')
-    port = int(os.getenv('FLASK_PORT', 5000))
+    port = int(os.getenv('PORT', os.getenv('FLASK_PORT', 5000)))
     # DEBUG is strictly disabled by default
     debug = os.getenv('FLASK_DEBUG', os.getenv('DEBUG', '0')).strip().lower() in ('1', 'true', 'yes', 'on')
 
