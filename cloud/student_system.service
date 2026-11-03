@@ -1,0 +1,16 @@
+[Unit]
+Description=Gunicorn instance to serve Smart Student Management System
+After=network.target
+
+[Service]
+User=ubuntu
+Group=www-data
+WorkingDirectory=/var/www/student_system
+Environment="PATH=/var/www/student_system/venv/bin"
+EnvironmentFile=/var/www/student_system/.env
+ExecStart=/var/www/student_system/venv/bin/gunicorn --workers 3 --bind 127.0.0.1:8000 app:app
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
