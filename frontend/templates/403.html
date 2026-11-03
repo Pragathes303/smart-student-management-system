@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}403 Forbidden - Access Denied{% endblock %}
+
+{% block content %}
+<div class="error-page-container">
+    <div class="card error-card" role="region" aria-labelledby="error-heading">
+        <div class="error-badge-wrapper">
+            <div class="error-icon-circle error-icon-forbidden" aria-hidden="true">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+            </div>
+            <div class="error-code-badge" aria-label="HTTP Error Code 403">403</div>
+        </div>
+        <h1 id="error-heading" class="error-title">Access Forbidden</h1>
+        <p class="error-description">
+            {{ error_message or "You do not have permission to access this resource or perform this action." }}
+        </p>
+        <div class="error-guidance">
+            <p><strong>Possible reasons:</strong></p>
+            <ul class="error-reasons-list">
+                <li>Your user account role (<strong>{{ current_user.role if current_user else 'Guest' }}</strong>) lacks sufficient privileges.</li>
+                <li>You are assigned to a specific department or subject course list.</li>
+                <li>The semester marks have been officially published and locked by the Academic Registrar.</li>
+            </ul>
+        </div>
+        <div class="error-actions">
+            {% if current_user %}
+                {% if current_user.role == 'student' %}
+                <a href="{{ url_for('routes.student_portal') }}" class="btn btn-primary" id="btn-return-home">
+                    Return to Student Portal
+                </a>
+                {% else %}
+                <a href="{{ url_for('routes.dashboard') }}" class="btn btn-primary" id="btn-return-home">
+                    Return to Dashboard
+                </a>
+                {% endif %}
+            {% else %}
+            <a href="{{ url_for('auth.login') }}" class="btn btn-primary" id="btn-return-home">
+                Sign In to Account
+            </a>
+            {% endif %}
+            <a href="javascript:history.back()" class="btn btn-secondary" id="btn-go-back">
+                &larr; Go Back
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}500 Internal Server Error{% endblock %}
+
+{% block content %}
+<div class="error-page-container">
+    <div class="card error-card" role="region" aria-labelledby="error-heading">
+        <div class="error-badge-wrapper">
+            <div class="error-icon-circle error-icon-server" aria-hidden="true">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+            </div>
+            <div class="error-code-badge" aria-label="HTTP Error Code 500">500</div>
+        </div>
+        <h1 id="error-heading" class="error-title">Internal Server Error</h1>
+        <p class="error-description">
+            {{ error_message or "An unexpected condition occurred on the server while processing your academic request." }}
+        </p>
+        <div class="error-guidance">
+            <p>Our automated monitoring system has recorded this exception in the audit logs. If the issue persists, please contact your systems administrator.</p>
+        </div>
+        <div class="error-actions">
+            <a href="javascript:location.reload()" class="btn btn-primary" id="btn-reload">
+                Retry Action
+            </a>
+            {% if current_user and current_user.role != 'student' %}
+            <a href="{{ url_for('routes.dashboard') }}" class="btn btn-secondary" id="btn-dashboard">
+                Return to Dashboard
+            </a>
+            {% elif current_user and current_user.role == 'student' %}
+            <a href="{{ url_for('routes.student_portal') }}" class="btn btn-secondary" id="btn-student-portal">
+                My Student Portal
+            </a>
+            {% else %}
+            <a href="{{ url_for('auth.login') }}" class="btn btn-secondary" id="btn-login">
+                Return to Sign In
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

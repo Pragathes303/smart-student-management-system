@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Student - {{ student.name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-title">
+        <h1>Edit Student Record</h1>
+        <p>Updating profile and academic records for <strong>{{ student.name }}</strong> ({{ student.register_number }}).</p>
+    </div>
+    <div class="page-actions">
+        <a href="{{ url_for('routes.view_student', student_id=student.id) }}" class="btn btn-secondary btn-sm">
+            &larr; View Profile
+        </a>
+    </div>
+</div>
+
+<div class="card" style="max-width: 800px; margin: 0 auto;">
+    <div class="card-header">
+        <h2 class="card-title">Update Record Details</h2>
+        <span style="font-size: 13px; color: var(--text-muted);"><span class="required" style="color: var(--danger);">*</span> Required fields</span>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('routes.edit_student', student_id=student.id) }}" enctype="multipart/form-data" novalidate id="edit-student-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="original_updated_at" value="{{ student.updated_at }}">
+            
+            <!-- Full Name -->
+            <div class="form-group {% if field_errors and field_errors.get('name') %}has-error{% endif %}">
+                <label for="name" class="form-label">Full Name <span class="required" aria-hidden="true">*</span></label>
+                <input
+                    type="text"
+                    id="name"
+                    name="name"
+                    class="form-control"
+                    value="{{ student.name }}"
+                    required
+                    aria-required="true"
+                    {% if field_errors and field_errors.get('name') %}aria-invalid="true" aria-describedby="name-error"{% endif %}
+                >
+                {% if field_errors and field_errors.get('name') %}
+                <div class="field-error-message" role="alert" id="name-error">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                    <span>{{ field_errors['name'] }}</span>
+                </div>
+                {% endif %}
+                <div class="form-text">Student legal first and last name (2-80 characters).</div>
+            </div>
+
+            <!-- Three-column grid for Register No, Department, and Academic Year -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 0;">
+                <div class="form-group {% if field_errors and field_errors.get('register_number') %}has-error{% endif %}">
+                    <label for="register_number" class="form-label">Register Number <span class="required" aria-hidden="true">*</span></label>
+                    <input
+                        type="text"
+                        id="register_number"
+                        name="register_number"
+                        class="form-control"
+                        value="{{ student.register_number }}"
+                        style="text-transform: uppercase;"
+                        required
+                        aria-required="true"
+                        {% if field_errors and field_errors.get('register_number') %}aria-invalid="true" aria-describedby="register_number-error"{% endif %}
+                    >
+                    {% if field_errors and field_errors.get('register_number') %}
+                    <div class="field-error-message" role="alert" id="register_number-error">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                        <span>{{ field_errors['register_number'] }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="form-text">Unique institutional ID (letters, numbers, hyphens).</div>
+                </div>
+
+                <div class="form-group {% if field_errors and field_errors.get('department') %}has-error{% endif %}">
+                    <label for="department" class="form-label">Department <span class="required" aria-hidden="true">*</span></label>
+                    <select id="department" name="department" class="form-control" required aria-required="true" {% if field_errors and field_errors.get('department') %}aria-invalid="true" aria-describedby="department-error"{% endif %}>
+                        {% for dept in departments %}
+                        <option value="{{ dept }}" {% if student.department == dept %}selected{% endif %}>
+                            {{ dept }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    {% if field_errors and field_errors.get('department') %}
+                    <div class="field-error-message" role="alert" id="department-error">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                        <span>{{ field_errors['department'] }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group {% if field_errors and field_errors.get('year') %}has-error{% endif %}">
+                    <label for="year" class="form-label">Academic Year <span class="required" aria-hidden="true">*</span></label>
+                    <select id="year" name="year" class="form-control" required aria-required="true" {% if field_errors and field_errors.get('year') %}aria-invalid="true" aria-describedby="year-error"{% endif %}>
+                        {% for y in range(1, 5) %}
+                        <option value="{{ y }}" {% if (student.year|default(1)|int) == y %}selected{% endif %}>
+                            Year {{ y }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    {% if field_errors and field_errors.get('year') %}
+                    <div class="field-error-message" role="alert" id="year-error">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                        <span>{{ field_errors['year'] }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="form-text">Year of study (1 to 4).</div>
+                </div>
+            </div>
+
+            <!-- Two-column grid for Email and Marks -->
+            <div class="grid-2" style="margin-bottom: 0;">
+                <div class="form-group {% if field_errors and field_errors.get('email') %}has-error{% endif %}">
+                    <label for="email" class="form-label">Email Address <span class="required" aria-hidden="true">*</span></label>
+                    <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        class="form-control"
+                        value="{{ student.email }}"
+                        required
+                        aria-required="true"
+                        {% if field_errors and field_errors.get('email') %}aria-invalid="true" aria-describedby="email-error"{% endif %}
+                    >
+                    {% if field_errors and field_errors.get('email') %}
+                    <div class="field-error-message" role="alert" id="email-error">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                        <span>{{ field_errors['email'] }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="form-text">Primary institutional contact email.</div>
+                </div>
+
+                <div class="form-group {% if field_errors and field_errors.get('marks') %}has-error{% endif %}">
+                    <label for="marks" class="form-label">
+                        Academic Marks (0 - 100) <span class="required" aria-hidden="true">*</span>
+                        <span id="grade-preview" style="margin-left: 8px;"></span>
+                    </label>
+                    <input
+                        type="number"
+                        id="marks"
+                        name="marks"
+                        class="form-control"
+                        step="0.01"
+                        min="0"
+                        max="100"
+                        value="{{ student.marks }}"
+                        required
+                        aria-required="true"
+                        {% if field_errors and field_errors.get('marks') %}aria-invalid="true" aria-describedby="marks-error"{% endif %}
+                    >
+                    {% if field_errors and field_errors.get('marks') %}
+                    <div class="field-error-message" role="alert" id="marks-error">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                        <span>{{ field_errors['marks'] }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="form-text">Cumulative academic score (percentage out of 100).</div>
+                </div>
+            </div>
+
+            <!-- Two-column grid for Phone and DOB -->
+            <div class="grid-2" style="margin-bottom: 0;">
+                <div class="form-group {% if field_errors and field_errors.get('phone') %}has-error{% endif %}">
+                    <label for="phone" class="form-label">Phone Number (Optional)</label>
+                    <input
+                        type="tel"
+                        id="phone"
+                        name="phone"
+                        class="form-control"
+                        placeholder="e.g. +91 98765 43210"
+                        value="{{ student.phone or '' }}"
+                        {% if field_errors and field_errors.get('phone') %}aria-invalid="true" aria-describedby="phone-error"{% endif %}
+                    >
+                    {% if field_errors and field_errors.get('phone') %}
+                    <div class="field-error-message" role="alert" id="phone-error">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                        <span>{{ field_errors['phone'] }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="form-text">Contact phone number (7-15 digits).</div>
+                </div>
+
+                <div class="form-group {% if field_errors and field_errors.get('dob') %}has-error{% endif %}">
+                    <label for="dob" class="form-label">Date of Birth (Optional)</label>
+                    <input
+                        type="date"
+                        id="dob"
+                        name="dob"
+                        class="form-control"
+                        value="{{ student.dob or '' }}"
+                        {% if field_errors and field_errors.get('dob') %}aria-invalid="true" aria-describedby="dob-error"{% endif %}
+                    >
+                    {% if field_errors and field_errors.get('dob') %}
+                    <div class="field-error-message" role="alert" id="dob-error">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                        <span>{{ field_errors['dob'] }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="form-text">Student date of birth.</div>
+                </div>
+            </div>
+
+            <!-- Current Photo & Upload Replacement -->
+            <div class="form-group {% if field_errors and field_errors.get('photo') %}has-error{% endif %}" style="margin-top: 8px;">
+                <label for="photo" class="form-label">Student Photo</label>
+                {% if student.photo_url %}
+                <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 12px; padding: 12px; background-color: var(--bg-subtle); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                    <img src="{{ student.photo_url }}" alt="Profile photo for {{ student.name }}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border-color);">
+                    <div>
+                        <div style="font-weight: 600; font-size: 13px;">Current Photo</div>
+                        <label style="font-size: 13px; color: var(--danger); cursor: pointer; display: inline-flex; align-items: center; gap: 4px; margin-top: 4px;">
+                            <input type="checkbox" name="remove_photo" value="1">
+                            Remove photo on save
+                        </label>
+                    </div>
+                </div>
+                {% endif %}
+
+                <input
+                    type="file"
+                    id="photo"
+                    name="photo"
+                    class="form-control"
+                    accept="image/png, image/jpeg, image/jpg, image/webp"
+                    style="padding: 6px;"
+                    {% if field_errors and field_errors.get('photo') %}aria-invalid="true" aria-describedby="photo-error"{% endif %}
+                >
+                {% if field_errors and field_errors.get('photo') %}
+                <div class="field-error-message" role="alert" id="photo-error">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                    <span>{{ field_errors['photo'] }}</span>
+                </div>
+                {% endif %}
+                <div class="form-text">Choose a new image file to replace the current photo (Max 3MB).</div>
+            </div>
+
+            <!-- Form Actions -->
+            <div style="display: flex; gap: 12px; margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--border-color);">
+                <button type="submit" class="btn btn-primary" id="btn-update-student">
+                    Update Record
+                </button>
+                <a href="{{ url_for('routes.view_student', student_id=student.id) }}" class="btn btn-secondary">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

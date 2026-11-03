@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}System User Accounts{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-title">
+        <h1>Staff &amp; User Accounts</h1>
+        <p>Manage role-based access for system administrators and academic staff members.</p>
+    </div>
+</div>
+
+<div class="grid-2">
+    <!-- User List -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Registered Accounts</h2>
+            <span class="badge badge-neutral">{{ total_count if total_count is defined else users|length }} Total</span>
+        </div>
+        <div class="card-body" style="padding: 0;">
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Role</th>
+                            <th>Assignment</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for u in users %}
+                        <tr>
+                            <td>
+                                <div style="font-weight: 600;">{{ u.full_name }}</div>
+                                <div style="font-size: 12px; color: var(--text-muted); font-family: var(--font-mono);">
+                                    @{{ u.username }} &bull; {{ u.email }}
+                                </div>
+                            </td>
+                            <td>
+                                <span class="user-role role-{{ u.role }}">{{ u.role }}</span>
+                            </td>
+                            <td>
+                                <div style="font-size: 13px; font-weight: 600;">{{ u.department or 'All Departments' }}</div>
+                                <div style="font-size: 11px; color: var(--text-muted); font-family: var(--font-mono);">{{ u.assigned_subjects or 'All Subjects' }}</div>
+                            </td>
+                            <td>
+                                {% if not u.is_active %}
+                                <span class="badge badge-grade-f">Inactive</span>
+                                {% elif u.must_change_password %}
+                                <span class="badge badge-grade-d" title="Mandatory password change pending">Reset Req</span>
+                                {% else %}
+                                <span class="badge badge-grade-a">Active</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if u.id != current_user.id %}
+                                <form method="POST" action="{{ url_for('routes.admin_reset_user_password', user_id=u.id) }}" style="display: inline;" onsubmit="return confirm('Generate a temporary password for @{{ u.username }}? They will be required to change it on their next login.');">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-secondary btn-sm" title="Generate temporary password for user">
+                                        Reset Pwd
+                                    </button>
+                                </form>
+                                {% else %}
+                                <span style="font-size: 12px; color: var(--text-muted); font-weight: 500;">(Current)</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% if total_pages and total_pages > 1 %}
+            <div class="pagination-container" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-top: 1px solid var(--border-color);">
+                <div style="font-size: 12px; color: var(--text-muted);">
+                    Page {{ current_page }} of {{ total_pages }} ({{ total_count }} users)
+                </div>
+                <div class="pagination-controls" style="display: flex; gap: 6px;">
+                    {% if has_prev %}
+                    <a href="{{ url_for('routes.manage_users', page=prev_page) }}" class="btn btn-secondary btn-sm" style="padding: 4px 10px; font-size: 12px;">&larr; Prev</a>
+                    {% endif %}
+                    <span class="btn btn-secondary btn-sm active" style="pointer-events: none; font-weight: 600; padding: 4px 10px; font-size: 12px;">{{ current_page }}</span>
+                    {% if has_next %}
+                    <a href="{{ url_for('routes.manage_users', page=next_page) }}" class="btn btn-secondary btn-sm" style="padding: 4px 10px; font-size: 12px;">Next &rarr;</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Create New User Account Form -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Create New System Account</h2>
+            <span class="badge badge-neutral">Admin Only</span>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('routes.manage_users') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="form-group">
+                    <label for="full_name" class="form-label">Full Name <span class="required">*</span></label>
+                    <input type="text" id="full_name" name="full_name" class="form-control" placeholder="e.g. Dr. Jane Doe" required>
+                </div>
+
+                <div class="grid-2" style="margin-bottom: 0;">
+                    <div class="form-group">
+                        <label for="username" class="form-label">Username <span class="required">*</span></label>
+                        <input type="text" id="username" name="username" class="form-control" placeholder="e.g. jdoe" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="role" class="form-label">Role <span class="required">*</span></label>
+                        <select id="role" name="role" class="form-control" required>
+                            <option value="staff" selected>Staff (Read/Write Students)</option>
+                            <option value="admin">Administrator (Full Access &amp; Delete)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid-2" style="margin-bottom: 0;">
+                    <div class="form-group">
+                        <label for="department" class="form-label">Assigned Department</label>
+                        <select id="department" name="department" class="form-control">
+                            <option value="">All Departments (Unrestricted)</option>
+                            {% for dept in departments %}
+                            <option value="{{ dept }}">{{ dept }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="assigned_subjects" class="form-label">Assigned Courses (Codes)</label>
+                        <input type="text" id="assigned_subjects" name="assigned_subjects" class="form-control" placeholder="e.g. CS101, CS201 (blank=All)">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="email" class="form-label">Email Address <span class="required">*</span></label>
+                    <input type="email" id="email" name="email" class="form-control" placeholder="e.g. jdoe@university.edu" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="password" class="form-label">Initial Password <span class="required">*</span></label>
+                    <input type="password" id="password" name="password" class="form-control" placeholder="Min. 8 chars (mixed case, digit, special)" minlength="8" required>
+                    <div class="form-text" style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
+                        Password policy: Min. 8 characters, not identical to username, must include uppercase, lowercase, numbers, and symbols. User will be forced to change password on first sign in.
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="margin-top: 12px;">
+                    Create User Account
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

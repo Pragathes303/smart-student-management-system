@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Bulk Import Students{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-title">
+        <h1>Bulk Import Students (CSV &amp; Excel)</h1>
+        <p>Onboard multiple student records simultaneously via CSV or Microsoft Excel (.xlsx) spreadsheet.</p>
+    </div>
+    <div class="page-actions">
+        <a href="{{ url_for('routes.download_csv_template') }}" class="btn btn-secondary btn-sm" title="Download standard CSV template">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Download CSV Template
+        </a>
+        <a href="{{ url_for('routes.download_excel_template') }}" class="btn btn-secondary btn-sm" title="Download styled Excel template">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+            </svg>
+            Download Excel Template
+        </a>
+        <a href="{{ url_for('routes.list_students') }}" class="btn btn-secondary btn-sm">
+            &larr; Back to Directory
+        </a>
+    </div>
+</div>
+
+<div class="grid-2">
+    <!-- Upload Card -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Upload Spreadsheet File</h2>
+            <span class="badge badge-neutral">CSV or Excel</span>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('routes.import_students') }}" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label for="csv_file" class="form-label">Select File (.csv, .xlsx) <span class="required">*</span></label>
+                    <input
+                        type="file"
+                        id="csv_file"
+                        name="csv_file"
+                        class="form-control"
+                        accept=".csv, .xlsx, .xls"
+                        required
+                        style="padding: 8px;"
+                    >
+                    <div class="form-text" style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
+                        Supported formats: CSV (UTF-8) or Microsoft Excel (.xlsx) workbooks up to 5MB.
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 14px; font-weight: 500;">
+                        <input type="checkbox" name="preview_mode" value="1" checked style="width: 16px; height: 16px;">
+                        <span>Preview and validate rows before committing to database (Recommended)</span>
+                    </label>
+                </div>
+
+                <div style="display: flex; gap: 10px;">
+                    <button type="submit" class="btn btn-primary" style="flex: 1;">
+                        Process &amp; Ingest Records
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Instructions & Format Card -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Spreadsheet Format Requirements</h2>
+        </div>
+        <div class="card-body">
+            <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 12px;">
+                Your file must have the column headers shown below (order is flexible):
+            </p>
+
+            <div style="background-color: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 12px; font-family: var(--font-mono); font-size: 12px; line-height: 1.6; overflow-x: auto;">
+                Name,Register Number,Department,Year,Email,Marks<br/>
+                Rahul Nair,REG2024101,Computer Science,1,rahul.nair@example.edu,86.5<br/>
+                Pooja Sundaram,REG2024102,Information Technology,2,pooja.s@example.edu,91.0<br/>
+                Manoj Kumar,REG2024103,Data Science,1,manoj.k@example.edu,74.0
+            </div>
+
+            <ul style="font-size: 13px; color: var(--text-muted); margin-top: 16px; padding-left: 20px; line-height: 1.6;">
+                <li><strong>Register Number:</strong> Must be unique for every student.</li>
+                <li><strong>Department:</strong> Must match one of the institution's active departments.</li>
+                <li><strong>Year:</strong> Academic year (1, 2, 3, or 4). Defaults to 1 if omitted.</li>
+                <li><strong>Marks:</strong> Numeric score between 0.00 and 100.00. Automatic Anna University grade is computed.</li>
+                <li><strong>Email:</strong> Valid unique email address for student portal credential delivery.</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

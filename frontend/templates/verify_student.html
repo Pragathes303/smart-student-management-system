@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Credential Verification | Smart Student System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script>
+        (function() {
+            var saved = localStorage.getItem('theme');
+            if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            } else {
+                document.documentElement.setAttribute('data-theme', 'light');
+            }
+        })();
+    </script>
+</head>
+<body style="min-height: 100vh; display: flex; flex-direction: column;">
+
+    <!-- Minimal Institutional Header -->
+    <header style="background-color: #1e3a8a; color: #ffffff; padding: 16px 24px; border-bottom: 3px solid #0284c7;">
+        <div style="max-width: 760px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+            <div>
+                <div style="font-size: 16px; font-weight: 700; letter-spacing: 0.5px;">OFFICE OF THE REGISTRAR &bull; CREDENTIAL VERIFICATION</div>
+                <div style="font-size: 12px; color: #cbd5e1; margin-top: 2px;">Smart Student Management System &bull; Secure Digital Archive</div>
+            </div>
+            <button id="theme-toggle" type="button" class="btn btn-secondary btn-sm" aria-label="Toggle dark/light theme" title="Toggle Theme" style="background-color: rgba(255,255,255,0.15); color: #ffffff; border-color: rgba(255,255,255,0.3); display: inline-flex; align-items: center; gap: 5px;">
+                <span class="theme-text">Toggle Theme</span>
+            </button>
+        </div>
+    </header>
+
+    <main style="flex: 1; max-width: 760px; width: 100%; margin: 30px auto; padding: 0 16px;">
+
+        {% if verified %}
+        <!-- Verified Genuine Alert -->
+        <div style="background-color: #ecfdf5; border: 2px solid #059669; border-radius: 8px; padding: 20px 24px; margin-bottom: 24px; display: flex; align-items: center; gap: 18px;">
+            <div style="width: 48px; height: 48px; border-radius: 50%; background-color: #059669; color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0;">
+                &#10003;
+            </div>
+            <div>
+                <div style="font-size: 17px; font-weight: 700; color: #065f46;">
+                    OFFICIALLY VERIFIED &amp; AUTHENTIC RECORD
+                </div>
+                <div style="font-size: 13px; color: #047857; margin-top: 2px;">
+                    This official digital credential was verified directly against the institutional registry.
+                </div>
+            </div>
+        </div>
+
+        <!-- Student Credential Verification Summary (Privacy Compliant) -->
+        <div class="card" style="margin-bottom: 24px;">
+            <div class="card-header" style="background-color: #fafbfc;">
+                <h2 class="card-title">Student Academic Credential</h2>
+                <span class="badge badge-grade-a">Status: Active &amp; Verified</span>
+            </div>
+            <div class="card-body">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; font-size: 14px;">
+                    <div>
+                        <span style="color: var(--text-muted); display: block; font-size: 12px; margin-bottom: 2px;">Student Full Name</span>
+                        <strong style="font-size: 16px; color: var(--text-main);">{{ student.name }}</strong>
+                    </div>
+                    <div>
+                        <span style="color: var(--text-muted); display: block; font-size: 12px; margin-bottom: 2px;">Register Number</span>
+                        <strong style="font-family: var(--font-mono); font-size: 15px; color: var(--primary);">{{ student.register_number }}</strong>
+                    </div>
+                    <div>
+                        <span style="color: var(--text-muted); display: block; font-size: 12px; margin-bottom: 2px;">Academic Department</span>
+                        <strong>{{ student.department }}</strong>
+                    </div>
+                    <div>
+                        <span style="color: var(--text-muted); display: block; font-size: 12px; margin-bottom: 2px;">Cumulative GPA / Grade</span>
+                        <strong style="color: var(--primary);">{{ student.cgpa or 'N/A' }} / 10.0 ({{ student.grade_info.grade }})</strong>
+                    </div>
+                </div>
+
+                <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border-color); font-size: 12px; color: var(--text-muted); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                    <span>Security Verification Hash: Validated</span>
+                    <span>Institutional Registry Authority</span>
+                </div>
+            </div>
+        </div>
+
+        {% else %}
+        <!-- Verification Failed Notice -->
+        <div style="background-color: #fef2f2; border: 2px solid #dc2626; border-radius: 8px; padding: 24px; text-align: center;">
+            <div style="font-size: 36px; color: #dc2626; margin-bottom: 12px;">&#9888;</div>
+            <h2 style="font-size: 20px; font-weight: 700; color: #991b1b; margin-bottom: 8px;">Digital Credential Not Found</h2>
+            <p style="font-size: 14px; color: #b91c1c; max-width: 480px; margin: 0 auto 16px auto;">
+                The requested verification token could not be matched against any active, authentic student record in the institutional database.
+            </p>
+            <div style="font-size: 12px; color: #7f1d1d;">
+                Please ensure you scanned an authentic QR code from an official, non-tampered grade card.
+            </div>
+        </div>
+        {% endif %}
+
+    </main>
+
+    <footer style="text-align: center; padding: 18px; font-size: 12px; color: var(--text-muted); border-top: 1px solid var(--border-color);">
+        &copy; Smart Student Management System &bull; Cryptographic Digital Verification Engine
+    </footer>
+
+</body>
+</html>

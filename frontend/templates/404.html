@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}404 Not Found - Page Not Found{% endblock %}
+
+{% block content %}
+<div class="error-page-container">
+    <div class="card error-card" role="region" aria-labelledby="error-heading">
+        <div class="error-badge-wrapper">
+            <div class="error-icon-circle error-icon-notfound" aria-hidden="true">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    <line x1="8" y1="11" x2="14" y2="11"></line>
+                </svg>
+            </div>
+            <div class="error-code-badge" aria-label="HTTP Error Code 404">404</div>
+        </div>
+        <h1 id="error-heading" class="error-title">Page Not Found</h1>
+        <p class="error-description">
+            {{ error_message or "The requested page, student profile, or academic resource could not be found." }}
+        </p>
+        <div class="error-guidance">
+            <p>The record may have been moved, permanently removed, or the URL might be mistyped.</p>
+        </div>
+        <div class="error-actions">
+            {% if current_user and current_user.role != 'student' %}
+            <a href="{{ url_for('routes.list_students') }}" class="btn btn-primary" id="btn-browse-students">
+                Search Student Directory
+            </a>
+            <a href="{{ url_for('routes.dashboard') }}" class="btn btn-secondary" id="btn-dashboard">
+                Dashboard
+            </a>
+            {% elif current_user and current_user.role == 'student' %}
+            <a href="{{ url_for('routes.student_portal') }}" class="btn btn-primary" id="btn-student-portal">
+                My Student Portal
+            </a>
+            {% else %}
+            <a href="{{ url_for('auth.login') }}" class="btn btn-primary" id="btn-login">
+                Return to Sign In
+            </a>
+            {% endif %}
+            <a href="javascript:history.back()" class="btn btn-secondary" id="btn-go-back">
+                &larr; Go Back
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

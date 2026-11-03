@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+
+{% block title %}Student Academic Portal - {{ student.name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-title">
+        <h1>Student Academic Portal</h1>
+        <p>Welcome back, <strong>{{ student.name }}</strong> ({{ student.register_number }})</p>
+    </div>
+    <div class="page-actions">
+        <a href="{{ url_for('routes.download_student_pdf', student_id=student.id) }}" class="btn btn-secondary btn-sm" title="Download Official PDF Marksheet">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+            </svg>
+            Download Grade Card (PDF)
+        </a>
+        <a href="{{ url_for('routes.student_own_report_card_view') }}" class="btn btn-secondary btn-sm" id="btn-portal-print-report-card">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                <rect x="6" y="14" width="12" height="8"></rect>
+            </svg>
+            Print Report Card
+        </a>
+        <form method="POST" action="{{ url_for('routes.email_marksheet', student_id=student.id) }}" style="display: inline;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-primary btn-sm" title="Send grade card to my email">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                    <polyline points="22,6 12,13 2,6"></polyline>
+                </svg>
+                Email My Marksheet
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Attendance Shortage Alert Banner (<75%) -->
+{% if att_info and att_info.is_shortage %}
+<div class="alert alert-{{ att_info.alert_level }}" style="margin-bottom: 24px; border-left: 4px solid currentColor;">
+    <div style="font-size: 15px; font-weight: 700; margin-bottom: 4px;">
+        &bull; ATTENDANCE SHORTAGE NOTICE: {{ att_info.label|upper }}
+    </div>
+    <div style="font-size: 13px;">
+        Your recorded attendance is currently <strong>{{ attendance.attendance_percentage }}%</strong> ({{ attendance.attended_classes }}/{{ attendance.total_classes }} classes).
+        University guidelines require minimum <strong>75%</strong> attendance to be eligible for end-semester exams.
+        Please consult your department academic advisor regarding condonation procedures.
+    </div>
+</div>
+{% endif %}
+
+<!-- Key Academic KPIs -->
+<div class="stats-grid">
+    <!-- Cumulative GPA -->
+    <div class="stat-card">
+        <div class="stat-header">
+            <span class="stat-label">Cumulative GPA (CGPA)</span>
+            <span class="stat-icon">&#9733;</span>
+        </div>
+        <div class="stat-value" style="color: var(--primary);">
+            {{ gpa_stats.gpa }}
+        </div>
+        <div class="stat-subtext">
+            Out of 10.0 scale &bull; UGC / Anna Univ. Standard
+        </div>
+    </div>
+
+    <!-- Attendance Percentage -->
+    <div class="stat-card">
+        <div class="stat-header">
+            <span class="stat-label">Attendance Rate</span>
+            <span class="stat-icon">&#9737;</span>
+        </div>
+        <div class="stat-value" style="color: {% if attendance and attendance.attendance_percentage < 65 %}var(--danger){% elif attendance and attendance.attendance_percentage < 75 %}#b45309{% else %}var(--success){% endif %};">
+            {{ attendance.attendance_percentage if attendance else 0.0 }}%
+        </div>
+        <div class="stat-subtext">
+            {{ attendance.attended_classes if attendance else 0 }} / {{ attendance.total_classes if attendance else 0 }} classes attended
+        </div>
+    </div>
+
+    <!-- Total Credits Earned -->
+    <div class="stat-card">
+        <div class="stat-header">
+            <span class="stat-label">Credits Earned</span>
+            <span class="stat-icon">&#10003;</span>
+        </div>
+        <div class="stat-value" style="color: var(--success);">
+            {{ gpa_stats.passed_credits }} / {{ gpa_stats.total_credits }}
+        </div>
+        <div class="stat-subtext">
+            Total academic credits completed
+        </div>
+    </div>
+
+    <!-- Active Arrears / Backlogs -->
+    <div class="stat-card">
+        <div class="stat-header">
+            <span class="stat-label">Arrears / Backlogs</span>
+            <span class="stat-icon">&#9888;</span>
+        </div>
+        <div class="stat-value" style="color: {% if gpa_stats.arrear_count > 0 %}var(--danger){% else %}var(--text-main){% endif %};">
+            {{ gpa_stats.arrear_count }}
+        </div>
+        <div class="stat-subtext">
+            {% if gpa_stats.arrear_count == 0 %}All courses cleared successfully{% else %}Pending re-examination{% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Profile Details Card -->
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Enrolled Academic Profile</h2>
+        <span class="badge badge-neutral">Active Student</span>
+    </div>
+    <div class="card-body">
+        <div style="display: flex; gap: 24px; align-items: center; flex-wrap: wrap;">
+            {% if student.photo_url %}
+            <img src="{{ student.photo_url }}" alt="{{ student.name }}" style="width: 72px; height: 72px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border-color);">
+            {% else %}
+            <div style="width: 72px; height: 72px; border-radius: 50%; background-color: var(--primary-light); color: var(--primary); font-size: 24px; font-weight: 700; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border-color);">
+                {{ student.name[:2]|upper }}
+            </div>
+            {% endif %}
+
+            <div style="flex: 1; min-width: 260px;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px;">
+                    <div>
+                        <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 600;">Full Name</div>
+                        <div style="font-size: 15px; font-weight: 600; color: var(--text-main);">{{ student.name }}</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 600;">Register Number</div>
+                        <div style="font-family: var(--font-mono); font-size: 14px; font-weight: 600; color: var(--primary);">{{ student.register_number }}</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 600;">Department</div>
+                        <div style="font-size: 14px; color: var(--text-main);">{{ student.department }}</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 600;">Email Address</div>
+                        <div style="font-size: 14px; color: var(--text-main);">{{ student.email }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Semester-Wise SGPA Breakdown -->
+{% if semester_gpa_data and semester_gpa_data.by_semester %}
+<div class="card" style="margin-bottom: 24px;">
+    <div class="card-header">
+        <h2 class="card-title">Semester-Wise Performance Breakdown (SGPA &amp; Credits)</h2>
+    </div>
+    <div class="card-body">
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 16px;">
+            {% for sem_num, sem_info in semester_gpa_data.by_semester.items() %}
+            <div style="background-color: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 14px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span style="font-weight: 700; font-size: 14px; color: var(--text-main);">Semester {{ sem_num }}</span>
+                    <span class="badge {% if sem_info.sgpa >= 8.0 %}badge-grade-a{% elif sem_info.sgpa >= 6.0 %}badge-grade-b{% else %}badge-grade-f{% endif %}" style="font-weight: 700;">
+                        SGPA {{ "%.2f"|format(sem_info.sgpa) }}
+                    </span>
+                </div>
+                <div style="font-size: 12px; color: var(--text-muted); display: flex; justify-content: space-between;">
+                    <span>Credits Cleared:</span>
+                    <strong style="color: var(--text-main);">{{ sem_info.passed_credits }} / {{ sem_info.total_credits }}</strong>
+                </div>
+                <div style="font-size: 12px; color: var(--text-muted); display: flex; justify-content: space-between; margin-top: 4px;">
+                    <span>Arrears:</span>
+                    <strong style="color: {% if sem_info.arrears > 0 %}var(--danger){% else %}var(--success){% endif %};">{{ sem_info.arrears }}</strong>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Semester Coursework & Results Table -->
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Semester Coursework &amp; Results</h2>
+        <span class="badge badge-neutral">{{ subjects|length }} Total Subjects</span>
+    </div>
+    <div class="card-body" style="padding: 0;">
+        {% if subjects %}
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th style="width: 80px;">Semester</th>
+                        <th style="width: 130px;">Course Code</th>
+                        <th>Course Title</th>
+                        <th style="text-align: center; width: 80px;">Credits</th>
+                        <th style="text-align: center; width: 80px;">Marks</th>
+                        <th style="text-align: center; width: 90px;">Grade Point</th>
+                        <th style="text-align: center; width: 90px;">Letter Grade</th>
+                        <th style="text-align: center; width: 100px;">Result</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sub in subjects %}
+                    <tr>
+                        <td style="font-weight: 600; color: var(--text-muted);">Sem {{ sub.semester }}</td>
+                        <td style="font-family: var(--font-mono); font-weight: 600; color: var(--primary);">{{ sub.subject_code }}</td>
+                        <td>{{ sub.subject_name }}</td>
+                        <td style="text-align: center;">{{ sub.credits }}</td>
+                        <td style="text-align: center; font-weight: 600;">{{ sub.marks }}</td>
+                        <td style="text-align: center; font-weight: 700;">{{ sub.grade_point }}</td>
+                        <td style="text-align: center;">
+                            <span class="badge {% if sub.letter_grade in ['O', 'A+', 'A'] %}badge-grade-a{% elif sub.letter_grade in ['B+', 'B'] %}badge-grade-b{% else %}badge-grade-f{% endif %}">
+                                {{ sub.letter_grade }}
+                            </span>
+                        </td>
+                        <td style="text-align: center;">
+                            {% if sub.grade_point >= 6.0 %}
+                            <span class="badge badge-grade-a" style="font-size: 11px;">PASS</span>
+                            {% else %}
+                            <span class="badge badge-grade-f" style="font-size: 11px;">RE-APPEAR</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div style="padding: 30px; text-align: center; color: var(--text-muted);">
+            No course marks registered yet for your account. Please check back after semester publication.
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

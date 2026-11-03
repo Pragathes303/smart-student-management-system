@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}Daily Attendance Marking - Smart Student System{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-title">
+        <h1>Daily Period-Wise Attendance</h1>
+        <p>Record daily period attendance for academic departments. Attendance percentages update automatically.</p>
+    </div>
+    <div class="page-actions">
+        <a href="{{ url_for('routes.list_students') }}" class="btn btn-secondary btn-sm">
+            &larr; Back to Students
+        </a>
+    </div>
+</div>
+
+<!-- Department, Date, and Period Filter Form -->
+<div class="card" style="margin-bottom: 24px;">
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('routes.attendance_overview') }}" style="display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 200px;">
+                <label for="dept" class="form-label">Department</label>
+                <select id="dept" name="dept" class="form-control" onchange="this.form.submit()">
+                    {% for d in departments %}
+                    <option value="{{ d }}" {% if selected_dept == d %}selected{% endif %}>{{ d }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div style="flex: 1; min-width: 180px;">
+                <label for="subject" class="form-label">Subject / Course</label>
+                <select id="subject" name="subject" class="form-control" onchange="this.form.submit()">
+                    <option value="GENERAL" {% if not selected_subject or selected_subject == 'GENERAL' %}selected{% endif %}>General / Core Period</option>
+                    {% for sub in dept_subjects %}
+                    <option value="{{ sub.subject_code }}" {% if selected_subject == sub.subject_code %}selected{% endif %}>
+                        {{ sub.subject_code }} - {{ sub.subject_name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div style="width: 180px;">
+                <label for="date" class="form-label">Date</label>
+                <input
+                    type="date"
+                    id="date"
+                    name="date"
+                    class="form-control"
+                    value="{{ selected_date }}"
+                    onchange="this.form.submit()"
+                >
+            </div>
+
+            <div style="width: 140px;">
+                <label for="period" class="form-label">Period / Hour</label>
+                <select id="period" name="period" class="form-control" onchange="this.form.submit()">
+                    {% for p in range(1, 9) %}
+                    <option value="{{ p }}" {% if selected_period == p %}selected{% endif %}>Period {{ p }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <button type="submit" class="btn btn-secondary">
+                    Filter
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Bulk Attendance Entry Table -->
+<div class="card">
+    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <h2 class="card-title">{{ selected_dept }} &bull; {{ selected_date }} &bull; Period {{ selected_period }} &bull; {{ selected_subject or 'General' }} ({{ students|length }} Students)</h2>
+        <div>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="markAll('present')">Mark All Present</button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="markAll('absent')" style="margin-left: 6px;">Mark All Absent</button>
+        </div>
+    </div>
+    <div class="card-body" style="padding: 0;">
+        {% if students %}
+        <form method="POST" action="{{ url_for('routes.bulk_mark_attendance') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="department" value="{{ selected_dept }}">
+            <input type="hidden" name="date" value="{{ selected_date }}">
+            <input type="hidden" name="period" value="{{ selected_period }}">
+            <input type="hidden" name="subject_code" value="{{ selected_subject or 'GENERAL' }}">
+
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Register No</th>
+                            <th>Student Name</th>
+                            <th>Status Options</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in students %}
+                        <tr>
+                            <td style="font-family: var(--font-mono); font-weight: 600;">{{ s.register_number }}</td>
+                            <td style="font-weight: 600;">{{ s.name }}</td>
+                            <td>
+                                <div style="display: flex; gap: 16px; align-items: center;">
+                                    <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; color: #15803d; font-weight: 500;">
+                                        <input type="radio" name="status_{{ s.id }}" value="present" {% if s.current_status == 'present' or not s.current_status %}checked{% endif %}>
+                                        Present
+                                    </label>
+                                    <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; color: #b91c1c; font-weight: 500;">
+                                        <input type="radio" name="status_{{ s.id }}" value="absent" {% if s.current_status == 'absent' %}checked{% endif %}>
+                                        Absent
+                                    </label>
+                                    <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; color: #b45309; font-weight: 500;">
+                                        <input type="radio" name="status_{{ s.id }}" value="late" {% if s.current_status == 'late' %}checked{% endif %}>
+                                        Late
+                                    </label>
+                                    <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; color: #0369a1; font-weight: 500;">
+                                        <input type="radio" name="status_{{ s.id }}" value="excused" {% if s.current_status == 'excused' %}checked{% endif %}>
+                                        Excused
+                                    </label>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div style="padding: 16px 24px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end;">
+                <button type="submit" class="btn btn-primary">
+                    Save Attendance Records
+                </button>
+            </div>
+        </form>
+        {% else %}
+        <div style="text-align: center; padding: 48px 24px; color: var(--text-muted);">
+            <p>No active students enrolled in <strong>{{ selected_dept }}</strong>.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function markAll(status) {
+    const radios = document.querySelectorAll(`input[type="radio"][value="${status}"]`);
+    radios.forEach(r => r.checked = true);
+}
+</script>
+{% endblock %}

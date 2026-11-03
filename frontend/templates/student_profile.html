@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}My Student Profile - Smart Student System{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-title">
+        <h1>My Personal Profile</h1>
+        <p>Update your personal contact details, residential address, and profile photo.</p>
+    </div>
+    <div class="page-actions">
+        <a href="{{ url_for('routes.student_portal') }}" class="btn btn-secondary btn-sm">
+            &larr; Back to Academic Portal
+        </a>
+    </div>
+</div>
+
+<div class="card" style="max-width: 650px; margin: 0 auto;">
+    <div class="card-header">
+        <h2 class="card-title">Personal Contact Details</h2>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('routes.student_self_profile') }}" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <!-- Read-only Institutional Fields -->
+            <div style="background-color: var(--bg-hover); padding: 14px 18px; border-radius: 6px; margin-bottom: 20px; font-size: 13px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <div><span style="color: var(--text-muted);">Name:</span> <strong>{{ student.name }}</strong></div>
+                    <div><span style="color: var(--text-muted);">Register No:</span> <strong>{{ student.register_number }}</strong></div>
+                    <div><span style="color: var(--text-muted);">Department:</span> <strong>{{ student.department }}</strong></div>
+                    <div><span style="color: var(--text-muted);">Institutional Email:</span> <strong>{{ student.email }}</strong></div>
+                </div>
+                <div style="font-size: 11px; color: var(--text-muted); margin-top: 8px;">
+                    Academic details are managed by the registrar's office and cannot be edited by students.
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="phone" class="form-label">Contact Phone Number</label>
+                <input
+                    type="tel"
+                    id="phone"
+                    name="phone"
+                    class="form-control"
+                    placeholder="e.g. +91 98765 43210"
+                    value="{{ student.phone or '' }}"
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="dob" class="form-label">Date of Birth</label>
+                <input
+                    type="date"
+                    id="dob"
+                    name="dob"
+                    class="form-control"
+                    value="{{ student.dob or '' }}"
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="address" class="form-label">Residential Address</label>
+                <textarea
+                    id="address"
+                    name="address"
+                    class="form-control"
+                    rows="3"
+                    placeholder="Enter your current residential address"
+                >{{ student.address or '' }}</textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="photo" class="form-label">Profile Photo</label>
+                {% if photo_url %}
+                <div style="margin-bottom: 12px; display: flex; align-items: center; gap: 12px;">
+                    <img src="{{ photo_url }}" alt="Profile Photo" style="width: 56px; height: 56px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border-color);">
+                    <span style="font-size: 13px; color: var(--text-muted);">Current Photo</span>
+                </div>
+                {% endif %}
+                <input
+                    type="file"
+                    id="photo"
+                    name="photo"
+                    class="form-control"
+                    accept="image/png, image/jpeg, image/webp"
+                >
+                <small style="color: var(--text-muted); font-size: 12px; display: block; margin-top: 4px;">
+                    Allowed formats: PNG, JPG, JPEG, WEBP. Maximum file size: 3MB.
+                </small>
+            </div>
+
+            <div style="margin-top: 24px; display: flex; justify-content: flex-end; gap: 12px;">
+                <a href="{{ url_for('routes.student_portal') }}" class="btn btn-secondary">
+                    Cancel
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}System Security Audit Trail{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-title">
+        <h1>System Security Audit Trail</h1>
+        <p>Enterprise forensic log capturing who, what, when, state transitions (old &rarr; new values), and client IP addresses.</p>
+    </div>
+    <div class="page-actions">
+        <a href="{{ url_for('routes.export_audit_logs_csv', action=selected_action, username=selected_user) }}" class="btn btn-secondary btn-sm" title="Export filtered audit logs as CSV">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            Export CSV
+        </a>
+    </div>
+</div>
+
+<!-- Filters and Search Card -->
+<div class="card" style="margin-bottom: 24px;">
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('routes.audit_logs') }}" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) auto; gap: 12px; align-items: flex-end;">
+            <div>
+                <label class="form-label" style="font-size: 12px; font-weight: 600;">Action Type</label>
+                <select name="action" class="form-control" style="height: 38px;">
+                    <option value="">All Actions ({{ actions|length }})</option>
+                    {% for act in actions %}
+                    <option value="{{ act }}" {% if selected_action == act %}selected{% endif %}>{{ act }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="form-label" style="font-size: 12px; font-weight: 600;">Filter by User</label>
+                <input type="text" name="user" value="{{ selected_user }}" placeholder="e.g. admin, staff1" class="form-control" style="height: 38px;">
+            </div>
+            <div>
+                <label class="form-label" style="font-size: 12px; font-weight: 600;">Search Keyword</label>
+                <input type="text" name="q" value="{{ search_query }}" placeholder="Details or values..." class="form-control" style="height: 38px;">
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button type="submit" class="btn btn-primary" style="height: 38px;">Filter</button>
+                {% if selected_action or selected_user or search_query %}
+                <a href="{{ url_for('routes.audit_logs') }}" class="btn btn-secondary" style="height: 38px; display: inline-flex; align-items: center;">Clear</a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Audit Logs Table Card -->
+<div class="card">
+    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <h2 class="card-title">Activity Trail</h2>
+        <span class="badge badge-neutral">Showing {{ logs|length }} of {{ total_count }} Events (Page {{ current_page }} of {{ total_pages }})</span>
+    </div>
+    <div class="card-body" style="padding: 0;">
+        {% if logs %}
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th style="width: 140px;">Timestamp</th>
+                        <th style="width: 140px;">Who</th>
+                        <th style="width: 150px;">What (Action)</th>
+                        <th>State Changes (Old &rarr; New Value)</th>
+                        <th style="width: 120px;">IP Address</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                    <tr>
+                        <td style="font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); white-space: nowrap;">
+                            {{ log.timestamp }}
+                        </td>
+                        <td>
+                            <strong style="font-size: 13px;">{{ log.username }}</strong>
+                            {% if log.user_id %}
+                            <div style="font-size: 11px; color: var(--text-muted); font-family: var(--font-mono);">UID: {{ log.user_id }}</div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge {% if 'DELETED' in log.action or 'LOCK' in log.action %}badge-grade-f{% elif 'CREATED' in log.action or 'RESTORE' in log.action or 'SUCCESS' in log.action %}badge-grade-a{% elif 'UPDATED' in log.action or 'EDIT' in log.action %}badge-grade-b{% else %}badge-neutral{% endif %}" style="font-size: 11px;">
+                                {{ log.action }}
+                            </span>
+                        </td>
+                        <td style="font-size: 12px; font-family: var(--font-mono); max-width: 320px; word-break: break-all;">
+                            {% if log.old_value or log.new_value %}
+                            <div style="background-color: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 4px 8px;">
+                                {% if log.old_value %}
+                                <div style="color: var(--danger); margin-bottom: 2px;">
+                                    &minus; {{ log.old_value }}
+                                </div>
+                                {% endif %}
+                                {% if log.new_value %}
+                                <div style="color: var(--success);">
+                                    &plus; {{ log.new_value }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% else %}
+                            <span style="color: var(--text-muted);">&mdash;</span>
+                            {% endif %}
+                        </td>
+                        <td style="font-family: var(--font-mono); font-size: 12px; color: var(--text-muted);">
+                            {{ log.ip_address or '127.0.0.1' }}
+                        </td>
+                        <td style="font-size: 13px;">
+                            {{ log.details }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination Controls -->
+        {% if total_pages > 1 %}
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-top: 1px solid var(--border-color);">
+            <div style="font-size: 13px; color: var(--text-muted);">
+                Showing page <strong>{{ current_page }}</strong> of <strong>{{ total_pages }}</strong> ({{ total_count }} total entries)
+            </div>
+            <div style="display: flex; gap: 8px;">
+                {% if has_prev %}
+                <a href="{{ url_for('routes.audit_logs', page=prev_page, action=selected_action, user=selected_user, q=search_query) }}" class="btn btn-secondary btn-sm">&larr; Previous</a>
+                {% else %}
+                <span class="btn btn-secondary btn-sm" style="opacity: 0.5; pointer-events: none;">&larr; Previous</span>
+                {% endif %}
+
+                {% if has_next %}
+                <a href="{{ url_for('routes.audit_logs', page=next_page, action=selected_action, user=selected_user, q=search_query) }}" class="btn btn-secondary btn-sm">Next &rarr;</a>
+                {% else %}
+                <span class="btn btn-secondary btn-sm" style="opacity: 0.5; pointer-events: none;">Next &rarr;</span>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% else %}
+        <div style="padding: 32px; text-align: center; color: var(--text-muted);">
+            No audit records found matching the specified filter criteria.
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

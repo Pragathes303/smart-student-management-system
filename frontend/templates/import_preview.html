@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}Bulk Import Preview & Validation{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-title">
+        <h1>Import Preview &amp; Validation</h1>
+        <p>Review validated student records before committing them to the institutional database.</p>
+    </div>
+    <div class="page-actions">
+        <a href="{{ url_for('routes.import_students') }}" class="btn btn-secondary btn-sm">
+            &larr; Upload Different File
+        </a>
+    </div>
+</div>
+
+<!-- Summary Badges -->
+<div class="stats-grid" style="margin-bottom: 24px;">
+    <div class="stat-card">
+        <div class="stat-header">
+            <span class="stat-label">Total Rows Analyzed</span>
+            <span class="stat-icon">&#128196;</span>
+        </div>
+        <div class="stat-value">{{ summary.total }}</div>
+        <div class="stat-subtext">Rows parsed from file</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-header">
+            <span class="stat-label">Valid Records (To Add)</span>
+            <span class="stat-icon">&#9989;</span>
+        </div>
+        <div class="stat-value" style="color: var(--success);">{{ summary.valid }}</div>
+        <div class="stat-subtext">Passed all validation checks</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-header">
+            <span class="stat-label">Errors / Skipped</span>
+            <span class="stat-icon">&#9888;</span>
+        </div>
+        <div class="stat-value" style="color: {% if summary.error > 0 %}var(--danger){% else %}var(--text-main){% endif %};">
+            {{ summary.error }}
+        </div>
+        <div class="stat-subtext">Will be skipped during import</div>
+    </div>
+</div>
+
+<!-- Preview Table -->
+<div class="card">
+    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h2 class="card-title">Row-by-Row Ingestion Preview</h2>
+            <p style="font-size: 13px; color: var(--text-muted); margin-top: 2px;">
+                Review each record. Records with errors will be safely excluded.
+            </p>
+        </div>
+        {% if summary.valid > 0 %}
+        <form method="POST" action="{{ url_for('routes.import_students') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="action" value="confirm">
+            <button type="submit" class="btn btn-primary btn-sm" style="font-weight: 600;">
+                &#10003; Confirm &amp; Import {{ summary.valid }} Valid Record(s)
+            </button>
+        </form>
+        {% endif %}
+    </div>
+
+    <div class="card-body" style="padding: 0;">
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th style="width: 60px;">Row</th>
+                        <th>Student Name</th>
+                        <th>Register Number</th>
+                        <th>Department</th>
+                        <th style="text-align: center; width: 70px;">Year</th>
+                        <th>Email Address</th>
+                        <th style="text-align: center; width: 80px;">Marks</th>
+                        <th style="text-align: center; width: 80px;">Grade</th>
+                        <th>Validation Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                    <tr style="{% if row.status == 'error' %}background-color: #fff1f2;{% endif %}">
+                        <td style="font-weight: 600; color: var(--text-muted);">#{{ row.row_number }}</td>
+                        <td style="font-weight: 600;">{{ row.name }}</td>
+                        <td style="font-family: var(--font-mono); font-size: 13px; font-weight: 600; color: var(--primary);">
+                            {{ row.register_number }}
+                        </td>
+                        <td>{{ row.department }}</td>
+                        <td style="text-align: center;">Year {{ row.year }}</td>
+                        <td style="font-size: 13px; color: var(--text-muted);">{{ row.email }}</td>
+                        <td style="text-align: center; font-weight: 600;">{{ row.marks }}</td>
+                        <td style="text-align: center;">
+                            <span class="badge {% if row.grade in ['O', 'A+', 'A'] %}badge-grade-a{% elif row.grade in ['B+', 'B'] %}badge-grade-b{% else %}badge-grade-f{% endif %}">
+                                {{ row.grade }} ({{ row.grade_point }})
+                            </span>
+                        </td>
+                        <td>
+                            {% if row.status == 'valid' %}
+                            <span class="badge badge-grade-a" style="font-weight: 600;">
+                                &#10003; Valid
+                            </span>
+                            {% else %}
+                            <div style="color: var(--danger); font-size: 12px; font-weight: 500;">
+                                {% for err in row.errors %}
+                                <div>&bull; {{ err }}</div>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% if summary.valid > 0 %}
+    <div style="padding: 16px 20px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 10px; background-color: #fafbfc;">
+        <a href="{{ url_for('routes.import_students') }}" class="btn btn-secondary">Cancel</a>
+        <form method="POST" action="{{ url_for('routes.import_students') }}" style="display: inline;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="action" value="confirm">
+            <button type="submit" class="btn btn-primary">
+                Confirm &amp; Import {{ summary.valid }} Valid Record(s) &rarr;
+            </button>
+        </form>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

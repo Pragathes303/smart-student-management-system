@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Academic Subject - Smart Student System{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-title">
+        <h1>Edit Academic Subject Evaluation</h1>
+        <p>Update semester subject grading and credit weighting for <strong>{{ student.name }}</strong> ({{ student.register_number }}).</p>
+    </div>
+    <div class="page-actions">
+        <a href="{{ url_for('routes.view_student', student_id=student.id) }}" class="btn btn-secondary btn-sm">
+            &larr; Back to Student Profile
+        </a>
+    </div>
+</div>
+
+<div class="card" style="max-width: 650px; margin: 0 auto;">
+    <div class="card-header">
+        <h2 class="card-title">Subject Information</h2>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('routes.edit_subject', student_id=student.id, subject_id=subject.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="form-group">
+                <label for="semester" class="form-label">Semester <span class="required">*</span></label>
+                <select id="semester" name="semester" class="form-control" required>
+                    {% for s in range(1, 9) %}
+                    <option value="{{ s }}" {% if subject.semester == s %}selected{% endif %}>Semester {{ s }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="subject_code" class="form-label">Subject Code <span class="required">*</span></label>
+                <input
+                    type="text"
+                    id="subject_code"
+                    name="subject_code"
+                    class="form-control"
+                    placeholder="e.g. CS8491"
+                    value="{{ subject.subject_code }}"
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="subject_name" class="form-label">Subject Name <span class="required">*</span></label>
+                <input
+                    type="text"
+                    id="subject_name"
+                    name="subject_name"
+                    class="form-control"
+                    placeholder="e.g. Computer Architecture"
+                    value="{{ subject.subject_name }}"
+                    required
+                >
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="form-group">
+                    <label for="credits" class="form-label">Credits <span class="required">*</span></label>
+                    <input
+                        type="number"
+                        id="credits"
+                        name="credits"
+                        class="form-control"
+                        min="1"
+                        max="10"
+                        value="{{ subject.credits }}"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="marks" class="form-label">Marks (0 - 100) <span class="required">*</span></label>
+                    <input
+                        type="number"
+                        step="0.01"
+                        id="marks"
+                        name="marks"
+                        class="form-control"
+                        min="0"
+                        max="100"
+                        value="{{ subject.marks }}"
+                        required
+                    >
+                </div>
+            </div>
+
+            <div style="margin-top: 24px; display: flex; gap: 12px; justify-content: flex-end;">
+                <a href="{{ url_for('routes.view_student', student_id=student.id) }}" class="btn btn-secondary">
+                    Cancel
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    Update Subject
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

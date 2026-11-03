@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Error {{ error_code }} - Smart Student System{% endblock %}
+
+{% block content %}
+<div class="error-page-container">
+    <div class="card error-card" role="region" aria-labelledby="error-heading">
+        <div class="error-badge-wrapper">
+            <div class="error-icon-circle error-icon-general" aria-hidden="true">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+            </div>
+            <div class="error-code-badge" aria-label="HTTP Error Code {{ error_code }}">{{ error_code }}</div>
+        </div>
+        <h1 id="error-heading" class="error-title">
+            {% if error_code == 400 %}
+            Bad Request
+            {% elif error_code == 401 %}
+            Authentication Required
+            {% elif error_code == 413 %}
+            File Too Large
+            {% elif error_code == 429 %}
+            Too Many Requests
+            {% else %}
+            Unexpected Request Error
+            {% endif %}
+        </h1>
+        <p class="error-description">
+            {{ error_message or "An error occurred while attempting to fulfill your request." }}
+        </p>
+        <div class="error-actions">
+            {% if current_user and current_user.role != 'student' %}
+            <a href="{{ url_for('routes.dashboard') }}" class="btn btn-primary" id="btn-return-home">
+                Return to Dashboard
+            </a>
+            {% elif current_user and current_user.role == 'student' %}
+            <a href="{{ url_for('routes.student_portal') }}" class="btn btn-primary" id="btn-return-home">
+                Return to Student Portal
+            </a>
+            {% else %}
+            <a href="{{ url_for('auth.login') }}" class="btn btn-primary" id="btn-return-home">
+                Sign In to Account
+            </a>
+            {% endif %}
+            <a href="javascript:history.back()" class="btn btn-secondary" id="btn-go-back">
+                &larr; Go Back
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

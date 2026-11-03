@@ -1,0 +1,541 @@
+{% extends "base.html" %}
+
+{% block title %}{{ student.name }} - Academic Profile{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-title">
+        <h1>Student Academic Profile</h1>
+        <p>Comprehensive academic record, semester marks, and attendance analytics.</p>
+    </div>
+    <div class="page-actions">
+        <a href="{{ url_for('routes.list_students') }}" class="btn btn-secondary btn-sm">
+            &larr; Back to Directory
+        </a>
+        <a href="{{ url_for('routes.download_student_pdf', student_id=student.id) }}" class="btn btn-secondary btn-sm" title="Download Official PDF Marksheet">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+            </svg>
+            Download PDF
+        </a>
+        <a href="{{ url_for('routes.view_student_report_card', student_id=student.id) }}" class="btn btn-secondary btn-sm" title="View Print-Friendly Grade Report Card" id="btn-view-report-card">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                <rect x="6" y="14" width="12" height="8"></rect>
+            </svg>
+            Print Report Card
+        </a>
+        <form method="POST" action="{{ url_for('routes.email_marksheet', student_id=student.id) }}" style="display: inline;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-secondary btn-sm" title="Email marksheet to {{ student.email }}">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                    <polyline points="22,6 12,13 2,6"></polyline>
+                </svg>
+                Email Marksheet
+            </button>
+        </form>
+        {% if current_user.role in ['admin', 'staff'] %}
+        <a href="{{ url_for('routes.edit_student', student_id=student.id) }}" class="btn btn-primary btn-sm">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 20h9"/>
+                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+            </svg>
+            Edit Record
+        </a>
+        {% endif %}
+        {% if current_user.role == 'admin' and portal_user %}
+        <form method="POST" action="{{ url_for('routes.admin_reset_user_password', user_id=portal_user.id) }}" style="display: inline;" onsubmit="return confirm('Generate a temporary password for student @{{ portal_user.username }}? They will be required to change it on their next login.');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="next" value="{{ request.path }}">
+            <button type="submit" class="btn btn-secondary btn-sm" title="Admin Reset Student Password">
+                Reset Portal Pwd
+            </button>
+        </form>
+        {% endif %}
+        {% if current_user.role == 'admin' %}
+        <form
+            method="POST"
+            action="{{ url_for('routes.delete_student', student_id=student.id) }}"
+            style="display: inline;"
+            onsubmit="return confirmStudentDelete('{{ student.name }}', '{{ student.register_number }}');"
+        >
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-danger btn-sm">
+                Delete Record
+            </button>
+        </form>
+        <form
+            method="POST"
+            action="{{ url_for('routes.anonymize_student', student_id=student.id) }}"
+            style="display: inline; margin-left: 6px;"
+            onsubmit="return confirm('PRIVACY RIGHT TO ERASURE / ANONYMIZATION:\n\nAre you sure you want to permanently ANONYMIZE student \'{{ student.name }}\' ({{ student.register_number }})?\n\nThis action permanently removes all personal identifiable information (name, register number, email, phone, DOB, avatar photo, and user login). Academic marks will be kept strictly anonymous for cohort analytics.\n\nThis action CANNOT be undone.');"
+        >
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-secondary btn-sm" style="border-color: #f59e0b; color: #b45309;" title="Permanently scrub all personal identifiers (GDPR / Privacy Right to Erasure)">
+                Anonymize PII
+            </button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Attendance Shortage Banner (if < 75%) -->
+{% if att_info and att_info.is_shortage %}
+<div class="alert alert-{{ att_info.alert_level }}" style="margin-bottom: 24px; border-left: 4px solid currentColor;">
+    <div style="font-size: 15px; font-weight: 700; margin-bottom: 4px;">
+        &bull; ATTENDANCE SHORTAGE WARNING: {{ att_info.label|upper }}
+    </div>
+    <div style="font-size: 13px;">
+        Student attendance is currently <strong>{{ attendance.attendance_percentage }}%</strong> ({{ attendance.attended_classes }} attended of {{ attendance.total_classes }} total classes).
+        Institutional regulations mandate at least <strong>75%</strong> attendance to appear for university semester examinations without condonation penalties.
+    </div>
+</div>
+{% endif %}
+
+<!-- Profile Card -->
+<div class="profile-card" style="margin-bottom: 24px;">
+    <div class="profile-avatar-box">
+        {% if student.photo_url %}
+        <img src="{{ student.photo_url }}" alt="{{ student.name }}" class="profile-avatar-img">
+        {% else %}
+        <div class="profile-avatar-placeholder">
+            {{ student.name[:2]|upper }}
+        </div>
+        {% endif %}
+        <div style="margin-top: 12px;">
+            <span class="badge {{ student.grade_info.badge_class }}" style="font-size: 13px; padding: 4px 10px;">
+                Grade {{ student.grade_info.grade }} &bull; {{ student.grade_info.label }}
+            </span>
+        </div>
+    </div>
+
+    <div class="profile-details">
+        <h2 class="profile-name">{{ student.name }}</h2>
+        <div class="profile-reg">Register No: {{ student.register_number }}</div>
+
+        <!-- Academic Performance Meter -->
+        <div style="margin-top: 18px; padding: 14px 18px; background-color: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px;">
+                <span style="font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">
+                    Internal / Overall Score
+                </span>
+                <span style="font-size: 22px; font-weight: 700; color: var(--primary);">
+                    {{ student.marks }} <span style="font-size: 14px; font-weight: normal; color: var(--text-muted);">/ 100</span>
+                </span>
+            </div>
+            <div class="progress-bar-container" style="height: 10px;">
+                <div
+                    class="progress-bar-fill {% if student.marks >= 80 %}fill-success{% elif student.marks >= 50 %}fill-warning{% else %}fill-danger{% endif %}"
+                    style="width: {{ student.marks }}%;"
+                ></div>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+                <span>0 (Min)</span>
+                <span>50 (Pass Threshold)</span>
+                <span>100 (Max)</span>
+            </div>
+        </div>
+
+        <!-- Detailed Metadata Grid -->
+        <div class="profile-info-grid">
+            <div>
+                <div class="info-item-label">Academic Department</div>
+                <div class="info-item-val">{{ student.department }}</div>
+            </div>
+
+            <div>
+                <div class="info-item-label">Email Address</div>
+                <div class="info-item-val">
+                    <a href="mailto:{{ student.email }}">{{ student.email }}</a>
+                </div>
+            </div>
+
+            <div>
+                <div class="info-item-label">Cumulative GPA (CGPA)</div>
+                <div class="info-item-val" style="font-weight: 700; color: var(--primary);">
+                    {{ student.cgpa or gpa_stats.gpa or 'N/A' }} / 10.0
+                </div>
+            </div>
+
+            <div>
+                <div class="info-item-label">Student Portal Username</div>
+                <div class="info-item-val" style="font-family: var(--font-mono); font-size: 13px;">
+                    {{ student.register_number|lower }}
+                </div>
+            </div>
+
+            <div>
+                <div class="info-item-label">Record Created</div>
+                <div class="info-item-val" style="font-size: 13px;">{{ student.created_at }}</div>
+            </div>
+
+            <div>
+                <div class="info-item-label">Storage Backend</div>
+                <div class="info-item-val" style="font-size: 13px;">
+                    <span class="badge badge-neutral">{{ storage_mode|upper }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Attendance & Performance Summary Cards -->
+<div class="grid-2" style="margin-bottom: 24px;">
+    <!-- Attendance Card -->
+    <div class="card" style="margin-bottom: 0;">
+        <div class="card-header">
+            <h3 class="card-title">Attendance Tracking</h3>
+            {% if att_info %}
+            <span class="badge {{ att_info.badge_class }}">{{ att_info.label }}</span>
+            {% endif %}
+        </div>
+        <div class="card-body">
+            {% if attendance %}
+            <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 8px;">
+                <span style="font-size: 32px; font-weight: 700; color: {% if attendance.attendance_percentage < 65 %}var(--danger){% elif attendance.attendance_percentage < 75 %}#b45309{% else %}var(--success){% endif %};">
+                    {{ attendance.attendance_percentage }}%
+                </span>
+                <span style="font-size: 13px; color: var(--text-muted);">
+                    {{ attendance.attended_classes }} attended of {{ attendance.total_classes }} total classes
+                </span>
+            </div>
+
+            <div class="progress-bar-container" style="height: 10px; margin-bottom: 12px;">
+                <div
+                    class="progress-bar-fill {% if attendance.attendance_percentage >= 75 %}fill-success{% elif attendance.attendance_percentage >= 65 %}fill-warning{% else %}fill-danger{% endif %}"
+                    style="width: {{ attendance.attendance_percentage }}%;"
+                ></div>
+            </div>
+
+            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">
+                Status: <strong>{{ att_info.status }}</strong> &bull; Minimum required: <strong>75%</strong>
+            </div>
+
+            {% if current_user.role in ['admin', 'staff'] %}
+            <div style="background-color: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 12px 14px;">
+                <div style="font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">
+                    Update Attendance Record
+                </div>
+                <form method="POST" action="{{ url_for('routes.update_attendance', student_id=student.id) }}" style="display: flex; gap: 8px; align-items: flex-end;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div style="flex: 1;">
+                        <label style="font-size: 11px; color: var(--text-muted); display: block; margin-bottom: 2px;">Total Classes</label>
+                        <input type="number" name="total_classes" value="{{ attendance.total_classes }}" min="1" max="500" required class="form-control" style="padding: 6px 10px; font-size: 13px;">
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="font-size: 11px; color: var(--text-muted); display: block; margin-bottom: 2px;">Attended</label>
+                        <input type="number" name="attended_classes" value="{{ attendance.attended_classes }}" min="0" max="500" required class="form-control" style="padding: 6px 10px; font-size: 13px;">
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm" style="height: 33px;">
+                        Save
+                    </button>
+                </form>
+            </div>
+            {% endif %}
+
+            {% else %}
+            <p style="color: var(--text-muted);">No attendance record found for this student.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- CGPA / Academic Credits Card -->
+    <div class="card" style="margin-bottom: 0;">
+        <div class="card-header">
+            <h3 class="card-title">Cumulative Academic Standing</h3>
+            <span class="badge badge-neutral">10-Point Scale</span>
+        </div>
+        <div class="card-body">
+            <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 8px;">
+                <span style="font-size: 32px; font-weight: 700; color: var(--primary);">
+                    {{ gpa_stats.gpa }}
+                </span>
+                <span style="font-size: 13px; color: var(--text-muted);">
+                    CGPA / 10.0
+                </span>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px;">
+                <div style="background-color: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 10px; text-align: center;">
+                    <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Total Credits</div>
+                    <div style="font-size: 18px; font-weight: 700; color: var(--text-main); margin-top: 2px;">
+                        {{ gpa_stats.total_credits }}
+                    </div>
+                </div>
+                <div style="background-color: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 10px; text-align: center;">
+                    <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Earned Credits</div>
+                    <div style="font-size: 18px; font-weight: 700; color: var(--success); margin-top: 2px;">
+                        {{ gpa_stats.passed_credits }}
+                    </div>
+                </div>
+                <div style="background-color: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 10px; text-align: center;">
+                    <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Arrears / Backlogs</div>
+                    <div style="font-size: 18px; font-weight: 700; color: {% if gpa_stats.arrear_count > 0 %}var(--danger){% else %}var(--text-main){% endif %}; margin-top: 2px;">
+                        {{ gpa_stats.arrear_count }}
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 14px; font-size: 12px; color: var(--text-muted);">
+                Grading formula: <strong>&Sigma;(Credits &times; Grade Point) / &Sigma;Credits</strong>. Pass threshold is Grade B (GP 6.0).
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Semester-Wise SGPA Summary -->
+{% if semester_gpa_data and semester_gpa_data.by_semester %}
+<div class="card" style="margin-bottom: 24px;">
+    <div class="card-header">
+        <h2 class="card-title">Semester-Wise Performance Summary (SGPA &amp; Credits)</h2>
+    </div>
+    <div class="card-body">
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px;">
+            {% for sem_num, sem_info in semester_gpa_data.by_semester.items() %}
+            <div style="background-color: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 12px 14px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <span style="font-weight: 700; font-size: 14px; color: var(--text-main);">Sem {{ sem_num }}</span>
+                    <span class="badge {% if sem_info.sgpa >= 8.0 %}badge-grade-a{% elif sem_info.sgpa >= 6.0 %}badge-grade-b{% else %}badge-grade-f{% endif %}" style="font-weight: 700;">
+                        SGPA {{ "%.2f"|format(sem_info.sgpa) }}
+                    </span>
+                </div>
+                <div style="font-size: 12px; color: var(--text-muted); display: flex; justify-content: space-between;">
+                    <span>Credits Cleared:</span>
+                    <strong style="color: var(--text-main);">{{ sem_info.passed_credits }} / {{ sem_info.total_credits }}</strong>
+                </div>
+                <div style="font-size: 12px; color: var(--text-muted); display: flex; justify-content: space-between; margin-top: 3px;">
+                    <span>Arrears:</span>
+                    <strong style="color: {% if sem_info.arrears > 0 %}var(--danger){% else %}var(--success){% endif %};">{{ sem_info.arrears }}</strong>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Semester Subjects Breakdown -->
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Semester Subjects &amp; Coursework Performance</h2>
+        <span class="badge badge-neutral">{{ subjects|length }} {{ 'Course' if subjects|length == 1 else 'Courses' }} Recorded</span>
+    </div>
+    <div class="card-body" style="padding: 0;">
+        {% if subjects %}
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th style="width: 70px;">Sem</th>
+                        <th style="width: 120px;">Course Code</th>
+                        <th>Course Title</th>
+                        <th style="text-align: center; width: 80px;">Credits</th>
+                        <th style="text-align: center; width: 80px;">Marks</th>
+                        <th style="text-align: center; width: 90px;">Grade Point</th>
+                        <th style="text-align: center; width: 80px;">Letter</th>
+                        {% if current_user.role in ['admin', 'staff'] %}
+                        <th style="text-align: right; width: 80px;">Action</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sub in subjects %}
+                    <tr>
+                        <td style="font-weight: 600; color: var(--text-muted);">Sem {{ sub.semester }}</td>
+                        <td style="font-family: var(--font-mono); font-weight: 600; color: var(--primary);">{{ sub.subject_code }}</td>
+                        <td>{{ sub.subject_name }}</td>
+                        <td style="text-align: center;">{{ sub.credits }}</td>
+                        <td style="text-align: center; font-weight: 600;">{{ sub.marks }}</td>
+                        <td style="text-align: center; font-weight: 700;">{{ sub.grade_point }}</td>
+                        <td style="text-align: center;">
+                            <span class="badge {% if sub.letter_grade in ['O', 'A+', 'A'] %}badge-grade-a{% elif sub.letter_grade in ['B+', 'B'] %}badge-grade-b{% else %}badge-grade-f{% endif %}">
+                                {{ sub.letter_grade }}
+                            </span>
+                        </td>
+                        {% if current_user.role in ['admin', 'staff'] %}
+                        <td style="text-align: right; white-space: nowrap;">
+                            <button type="button" class="btn btn-secondary btn-sm" style="padding: 2px 8px; margin-right: 4px;" title="Edit Course Marks" onclick="openSubjectEditModal('{{ sub.id }}', '{{ sub.subject_code }}', '{{ sub.marks }}', '{{ sub.credits }}');">
+                                &#9998;
+                            </button>
+                            <form method="POST" action="{{ url_for('routes.delete_subject', student_id=student.id, subject_id=sub.id) }}" style="display: inline;" onsubmit="return confirm('Remove subject {{ sub.subject_code }}?');">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-secondary btn-sm" style="color: var(--danger); padding: 2px 8px;" title="Delete Course">
+                                    &times;
+                                </button>
+                            </form>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div style="padding: 24px; text-align: center; color: var(--text-muted);">
+            No semester coursework has been entered for this student yet.
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Subject Edit Modal (Staff / Admin) -->
+{% if current_user.role in ['admin', 'staff'] %}
+<div id="subject-edit-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div class="card" style="width: 100%; max-width: 420px; margin: 20px;">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 class="card-title">Edit Subject Marks: <span id="modal-sub-code"></span></h3>
+            <button type="button" onclick="closeSubjectEditModal()" style="background: none; border: none; font-size: 20px; cursor: pointer;">&times;</button>
+        </div>
+        <div class="card-body">
+            <form id="subject-edit-form" method="POST" action="">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="form-group" style="margin-bottom: 14px;">
+                    <label class="form-label">Marks (0 - 100) <span class="required">*</span></label>
+                    <input type="number" step="0.5" min="0" max="100" name="marks" id="modal-sub-marks" required class="form-control">
+                </div>
+                <div class="form-group" style="margin-bottom: 14px;">
+                    <label class="form-label">Credits <span class="required">*</span></label>
+                    <input type="number" min="1" max="10" name="credits" id="modal-sub-credits" required class="form-control">
+                </div>
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label class="form-label">Reason for Revision (Audit Log)</label>
+                    <input type="text" name="reason" placeholder="e.g. Revaluation, Retotaling, Correction" class="form-control">
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 8px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeSubjectEditModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Revision</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function openSubjectEditModal(subId, code, marks, credits) {
+    var modal = document.getElementById('subject-edit-modal');
+    var form = document.getElementById('subject-edit-form');
+    document.getElementById('modal-sub-code').textContent = code;
+    document.getElementById('modal-sub-marks').value = marks;
+    document.getElementById('modal-sub-credits').value = credits;
+    form.action = "{{ url_for('routes.view_student', student_id=student.id) }}/../students/{{ student.id }}/edit-subject/" + subId;
+    modal.style.display = 'flex';
+}
+function closeSubjectEditModal() {
+    document.getElementById('subject-edit-modal').style.display = 'none';
+}
+</script>
+{% endif %}
+
+<!-- Add Subject Form (Staff / Admin) -->
+{% if current_user.role in ['admin', 'staff'] %}
+<div class="card" style="margin-bottom: 24px;">
+    <div class="card-header">
+        <h3 class="card-title">+ Add Semester Subject</h3>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('routes.add_subject', student_id=student.id) }}" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)) auto; gap: 12px; align-items: flex-end;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div>
+                <label class="form-label">Semester</label>
+                <select name="semester" required class="form-control">
+                    {% for s in range(1, 9) %}
+                    <option value="{{ s }}" {% if s == 6 %}selected{% endif %}>Semester {{ s }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="form-label">Subject Code</label>
+                <input type="text" name="subject_code" placeholder="e.g. CS601" required class="form-control" style="text-transform: uppercase;">
+            </div>
+            <div style="grid-column: span 2;">
+                <label class="form-label">Subject Name</label>
+                <input type="text" name="subject_name" placeholder="e.g. Machine Learning" required class="form-control">
+            </div>
+            <div>
+                <label class="form-label">Credits</label>
+                <input type="number" name="credits" value="3" min="1" max="10" required class="form-control">
+            </div>
+            <div>
+                <label class="form-label">Marks (0-100)</label>
+                <input type="number" step="0.5" name="marks" value="85" min="0" max="100" required class="form-control">
+            </div>
+            <div>
+                <button type="submit" class="btn btn-primary" style="height: 38px;">
+                    + Add Subject
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<!-- Marks Edit History (Phase 2 - Audit Trail) -->
+<div class="card">
+    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <h3 class="card-title">Marks Edit History</h3>
+        <span class="badge badge-neutral">{{ marks_history|default([])|length }} revisions</span>
+    </div>
+    <div class="card-body" style="padding: 0;">
+        {% if marks_history %}
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Date & Time</th>
+                        <th>Subject</th>
+                        <th>Score Change</th>
+                        <th>Grade Change</th>
+                        <th>Modified By</th>
+                        <th>Reason / Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for h in marks_history %}
+                    <tr>
+                        <td style="font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); white-space: nowrap;">
+                            {{ h.created_at }}
+                        </td>
+                        <td style="font-weight: 600;">
+                            {{ h.subject_code or 'OVERALL' }}
+                            {% if h.subject_name %}
+                            <span style="font-size: 12px; color: var(--text-muted); font-weight: normal;">({{ h.subject_name }})</span>
+                            {% endif %}
+                        </td>
+                        <td style="font-size: 13px;">
+                            <span style="color: var(--text-muted); text-decoration: line-through;">{{ h.old_marks }}</span>
+                            &rarr;
+                            <strong style="color: var(--primary);">{{ h.new_marks }}</strong>
+                        </td>
+                        <td>
+                            <span class="badge badge-neutral" style="font-size: 11px;">{{ h.old_grade or '-' }}</span>
+                            &rarr;
+                            <span class="badge {% if h.new_grade in ['O', 'A+', 'A'] %}badge-grade-a{% elif h.new_grade in ['B+', 'B'] %}badge-grade-b{% else %}badge-grade-f{% endif %}" style="font-size: 11px;">{{ h.new_grade or '-' }}</span>
+                        </td>
+                        <td style="font-size: 13px;">
+                            <strong>{{ h.changed_by_name }}</strong>
+                            {% if h.ip_address %}
+                            <div style="font-size: 11px; font-family: var(--font-mono); color: var(--text-muted);">{{ h.ip_address }}</div>
+                            {% endif %}
+                        </td>
+                        <td style="font-size: 13px; color: var(--text-muted);">
+                            {{ h.reason or 'Record modification' }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div style="padding: 24px; text-align: center; color: var(--text-muted);">
+            No marks modifications have been recorded for this student yet.
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

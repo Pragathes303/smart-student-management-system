@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Credential Verification - Smart Student Management System{% endblock %}
+
+{% block content %}
+<div class="verify-container" style="max-width: 650px; margin: 40px auto; padding: 0 15px;">
+    {% if verified and student %}
+    <div class="card" style="border: 2px solid #16a34a; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+        <div style="background: #f0fdf4; padding: 20px; border-bottom: 1px solid #bbf7d0; text-align: center;">
+            <div style="display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; background: #22c55e; color: white; border-radius: 50%; font-size: 24px; margin-bottom: 10px;">
+                ✓
+            </div>
+            <h2 style="color: #15803d; margin: 0 0 5px 0; font-size: 20px;">Official Document Authenticity Verified</h2>
+            <p style="color: #166534; font-size: 13px; margin: 0;">This academic record is authenticated against the institutional registry.</p>
+        </div>
+
+        <div style="padding: 24px;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                <tr style="border-bottom: 1px solid #e2e8f0;">
+                    <td style="padding: 10px 0; color: #64748b; font-weight: 600; width: 40%;">Student Name:</td>
+                    <td style="padding: 10px 0; color: #1e293b; font-weight: 700;">{{ student.name }}</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #e2e8f0;">
+                    <td style="padding: 10px 0; color: #64748b; font-weight: 600;">Register Number:</td>
+                    <td style="padding: 10px 0; color: #1e293b; font-family: monospace;">{{ student.register_number }}</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #e2e8f0;">
+                    <td style="padding: 10px 0; color: #64748b; font-weight: 600;">Department:</td>
+                    <td style="padding: 10px 0; color: #1e293b;">{{ student.department }}</td>
+                </tr>
+                {% if cgpa_info %}
+                <tr style="border-bottom: 1px solid #e2e8f0;">
+                    <td style="padding: 10px 0; color: #64748b; font-weight: 600;">Cumulative GPA (CGPA):</td>
+                    <td style="padding: 10px 0; color: #1e293b; font-weight: 700;">{{ cgpa_info.cgpa }} / 10.00</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #e2e8f0;">
+                    <td style="padding: 10px 0; color: #64748b; font-weight: 600;">Academic Standing:</td>
+                    <td style="padding: 10px 0; color: #1e293b;">{{ cgpa_info.standing }}</td>
+                </tr>
+                {% endif %}
+                <tr>
+                    <td style="padding: 10px 0; color: #64748b; font-weight: 600;">Verification Token:</td>
+                    <td style="padding: 10px 0; color: #64748b; font-family: monospace; font-size: 12px;">{{ token }}</td>
+                </tr>
+            </table>
+
+            <div style="margin-top: 25px; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 12px; color: #64748b; text-align: center;">
+                Institutional Examination Authority • Office of the Controller of Examinations
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="card" style="border: 2px solid #ef4444; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); text-align: center; padding: 30px;">
+        <div style="display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; background: #ef4444; color: white; border-radius: 50%; font-size: 24px; margin-bottom: 12px;">
+            ✕
+        </div>
+        <h2 style="color: #b91c1c; margin: 0 0 8px 0; font-size: 20px;">Invalid or Expired Credential</h2>
+        <p style="color: #64748b; font-size: 14px; margin: 0 0 20px 0;">The provided verification token could not be matched with any active official institutional record.</p>
+        <a href="{{ url_for('auth.login') }}" class="btn btn-outline" style="font-size: 13px;">Return to Portal</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

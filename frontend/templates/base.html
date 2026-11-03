@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Professional Smart Student Management System built with Python, Flask, and SQLite.">
+    <title>{% block title %}Dashboard{% endblock %} - Smart Student Management System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script>
+        (function() {
+            var saved = localStorage.getItem('theme');
+            if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            } else {
+                document.documentElement.setAttribute('data-theme', 'light');
+            }
+        })();
+    </script>
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <!-- Accessibility Skip to Main Content Link -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+
+    <!-- Navigation Bar -->
+    <header class="navbar" role="banner">
+        <div class="nav-container">
+            <div class="nav-left">
+                <!-- Mobile Menu Hamburger Button -->
+                <button id="nav-toggle" class="nav-toggle" type="button" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="mobile-nav">
+                    <span class="hamburger-bar"></span>
+                    <span class="hamburger-bar"></span>
+                    <span class="hamburger-bar"></span>
+                </button>
+
+                <a href="{{ url_for('routes.dashboard') if current_user else url_for('auth.login') }}" class="brand" aria-label="Smart Student Management System Enterprise Home">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+                        <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+                    </svg>
+                    <span>StudentMS</span>
+                    <span class="brand-badge">Enterprise</span>
+                </a>
+            </div>
+
+            {% if current_user %}
+            <nav class="nav-links-wrapper" aria-label="Main Navigation">
+                <ul class="nav-links">
+                    {% if current_user.role == 'student' %}
+                    <li>
+                        <a href="{{ url_for('routes.student_portal') }}" class="nav-link {% if request.endpoint == 'routes.student_portal' %}active{% endif %}">
+                            My Portal
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ url_for('routes.student_self_profile') }}" class="nav-link {% if request.endpoint == 'routes.student_self_profile' %}active{% endif %}">
+                            My Profile
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ url_for('routes.student_own_report_card_view') }}" class="nav-link {% if request.endpoint == 'routes.student_own_report_card_view' %}active{% endif %}">
+                            Report Card
+                        </a>
+                    </li>
+                    {% else %}
+                    <li>
+                        <a href="{{ url_for('routes.dashboard') }}" class="nav-link {% if request.endpoint == 'routes.dashboard' %}active{% endif %}">
+                            Dashboard
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ url_for('routes.list_students') }}" class="nav-link {% if request.endpoint in ['routes.list_students', 'routes.view_student', 'routes.edit_student', 'routes.view_student_report_card'] %}active{% endif %}">
+                            Students
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ url_for('routes.add_student') }}" class="nav-link {% if request.endpoint == 'routes.add_student' %}active{% endif %}">
+                            + Add Student
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ url_for('routes.attendance_overview') }}" class="nav-link {% if request.endpoint == 'routes.attendance_overview' %}active{% endif %}">
+                            Attendance
+                        </a>
+                    </li>
+                    {% if current_user.role == 'admin' %}
+                    <li>
+                        <a href="{{ url_for('routes.manage_users') }}" class="nav-link {% if request.endpoint == 'routes.manage_users' %}active{% endif %}">
+                            Staff Accounts
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ url_for('routes.audit_logs') }}" class="nav-link {% if request.endpoint == 'routes.audit_logs' %}active{% endif %}">
+                            Audit Trail
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ url_for('routes.trash_students') }}" class="nav-link {% if request.endpoint == 'routes.trash_students' %}active{% endif %}">
+                            Trash
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ url_for('routes.admin_monitoring') }}" class="nav-link {% if request.endpoint == 'routes.admin_monitoring' %}active{% endif %}">
+                            Monitoring
+                        </a>
+                    </li>
+                    {% endif %}
+                    {% endif %}
+                </ul>
+            </nav>
+
+            <div class="user-profile">
+                <button id="theme-toggle" type="button" class="btn btn-secondary btn-sm" aria-label="Toggle dark/light theme" title="Toggle Theme" style="display: inline-flex; align-items: center; gap: 5px;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <span class="theme-text">Dark</span>
+                </button>
+                <div class="user-info">
+                    <div class="user-name">{{ current_user.full_name }}</div>
+                    <span class="user-role role-{{ current_user.role }}">{{ current_user.role }}</span>
+                </div>
+                <a href="{{ url_for('routes.change_password') }}" class="btn btn-secondary btn-sm" title="Change your password">
+                    Password
+                </a>
+                <form method="POST" action="{{ url_for('auth.logout') }}" style="display: inline; margin: 0; padding: 0;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-secondary btn-sm" title="Sign out of the system">
+                        Sign Out
+                    </button>
+                </form>
+            </div>
+            {% else %}
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <button id="theme-toggle" type="button" class="btn btn-secondary btn-sm" aria-label="Toggle dark/light theme" title="Toggle Theme" style="display: inline-flex; align-items: center; gap: 5px;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <span class="theme-text">Dark</span>
+                </button>
+                <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-sm">Sign In</a>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Mobile Navigation Drawer / Dropdown -->
+        <nav id="mobile-nav" class="mobile-nav" aria-label="Mobile Navigation Drawer" hidden>
+            {% if current_user %}
+            <div class="mobile-nav-user">
+                <div class="user-name">{{ current_user.full_name }}</div>
+                <span class="user-role role-{{ current_user.role }}">{{ current_user.role|capitalize }}</span>
+            </div>
+            <ul class="mobile-nav-links">
+                {% if current_user.role == 'student' %}
+                <li>
+                    <a href="{{ url_for('routes.student_portal') }}" class="mobile-nav-link {% if request.endpoint == 'routes.student_portal' %}active{% endif %}">
+                        My Portal
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('routes.student_self_profile') }}" class="mobile-nav-link {% if request.endpoint == 'routes.student_self_profile' %}active{% endif %}">
+                        My Profile
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('routes.student_own_report_card_view') }}" class="mobile-nav-link {% if request.endpoint == 'routes.student_own_report_card_view' %}active{% endif %}">
+                        Report Card
+                    </a>
+                </li>
+                {% else %}
+                <li>
+                    <a href="{{ url_for('routes.dashboard') }}" class="mobile-nav-link {% if request.endpoint == 'routes.dashboard' %}active{% endif %}">
+                        Dashboard
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('routes.list_students') }}" class="mobile-nav-link {% if request.endpoint in ['routes.list_students', 'routes.view_student', 'routes.edit_student', 'routes.view_student_report_card'] %}active{% endif %}">
+                        Students
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('routes.add_student') }}" class="mobile-nav-link {% if request.endpoint == 'routes.add_student' %}active{% endif %}">
+                        + Add Student
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('routes.attendance_overview') }}" class="mobile-nav-link {% if request.endpoint == 'routes.attendance_overview' %}active{% endif %}">
+                        Attendance
+                    </a>
+                </li>
+                {% if current_user.role == 'admin' %}
+                <li>
+                    <a href="{{ url_for('routes.manage_users') }}" class="mobile-nav-link {% if request.endpoint == 'routes.manage_users' %}active{% endif %}">
+                        Staff Accounts
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('routes.audit_logs') }}" class="mobile-nav-link {% if request.endpoint == 'routes.audit_logs' %}active{% endif %}">
+                        Audit Trail
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('routes.trash_students') }}" class="mobile-nav-link {% if request.endpoint == 'routes.trash_students' %}active{% endif %}">
+                        Trash Bin
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('routes.admin_monitoring') }}" class="mobile-nav-link {% if request.endpoint == 'routes.admin_monitoring' %}active{% endif %}">
+                        Monitoring
+                    </a>
+                </li>
+                {% endif %}
+                {% endif %}
+                <li class="mobile-nav-divider"></li>
+                <li>
+                    <a href="{{ url_for('routes.change_password') }}" class="mobile-nav-link">
+                        Change Password
+                    </a>
+                </li>
+                <li>
+                    <form method="POST" action="{{ url_for('auth.logout') }}" style="margin: 8px 0 0;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-secondary btn-block" style="width: 100%; text-align: center;">
+                            Sign Out
+                        </button>
+                    </form>
+                </li>
+            </ul>
+            {% else %}
+            <div style="padding: 16px;">
+                <a href="{{ url_for('auth.login') }}" class="btn btn-primary" style="width: 100%; text-align: center;">Sign In</a>
+            </div>
+            {% endif %}
+        </nav>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="main-content" id="main-content">
+        <!-- Flash Alert Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            <div class="flash-container" aria-live="polite">
+                {% for category, message in messages %}
+                <div class="alert alert-{{ category }}" role="alert">
+                    <span>{{ message }}</span>
+                    <button type="button" class="alert-close" aria-label="Close alert">&times;</button>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Page Footer -->
+    <footer class="footer" role="contentinfo">
+        <div class="footer-container">
+            <div>
+                &copy; 2026 Smart Student Management System. Built with Python, Flask, and SQLite.
+            </div>
+            <div>
+                <span>Storage Backend: <strong>{{ storage_mode|upper }}</strong></span>
+                <span style="margin: 0 8px;">|</span>
+                <a href="/api/docs" target="_blank" style="color: var(--primary); font-weight: 600; text-decoration: none;" title="Open Interactive Swagger API Console">REST API (Swagger)</a>
+                <span style="margin: 0 8px;">|</span>
+                <a href="{{ url_for('routes.privacy_policy') }}" style="color: var(--primary); font-weight: 600; text-decoration: none;" title="Student Data Privacy Notice &amp; Minimization Principles">Privacy &amp; Data Rights</a>
+                <span style="margin: 0 8px;">|</span>
+                <span>Ready for AWS EC2 &amp; S3</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Styled Accessible Confirmation & Alert Modal (Phase 4) -->
+    <div id="app-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-title" aria-describedby="modal-message" hidden>
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <div class="modal-header-icon" id="modal-icon" aria-hidden="true">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                </div>
+                <h3 class="modal-title" id="modal-title">Confirm Action</h3>
+                <button type="button" class="modal-close" id="modal-close-btn" aria-label="Close dialog">&times;</button>
+            </div>
+            <div class="modal-body" id="modal-message">
+                Are you sure you want to proceed with this action?
+            </div>
+            <div class="modal-footer" id="modal-footer">
+                <button type="button" class="btn btn-secondary" id="modal-cancel-btn">Cancel</button>
+                <button type="button" class="btn btn-danger" id="modal-confirm-btn">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

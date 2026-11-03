@@ -1,0 +1,451 @@
+{% extends "base.html" %}
+
+{% block title %}Academic Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-title">
+        <h1>Academic Dashboard</h1>
+        <p>Institutional overview of student enrollments, departmental distributions, and performance metrics.</p>
+    </div>
+    <div class="page-actions">
+        <span id="live-indicator" class="live-pulse-badge" title="Live background updates: auto-refreshing stats every 30 seconds">
+            <span class="live-dot"></span>
+            <span>Live (30s)</span>
+        </span>
+        <a href="{{ url_for('routes.export_students_csv') }}" class="btn btn-secondary btn-sm" title="Download CSV Report">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Export CSV
+        </a>
+        <a href="{{ url_for('routes.add_student') }}" class="btn btn-primary btn-sm">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            + Add Student
+        </a>
+    </div>
+</div>
+
+<!-- KPI Metrics Grid -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-header">
+            <span class="stat-label">Total Students</span>
+            <span class="stat-icon">&#127891;</span>
+        </div>
+        <div class="stat-value" id="kpi-total-students">{{ total_students }}</div>
+        <div class="stat-subtext">Active enrolled student records</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-header">
+            <span class="stat-label">Average Marks</span>
+            <span class="stat-icon">&#128202;</span>
+        </div>
+        <div class="stat-value" id="kpi-avg-marks">{{ avg_marks }} <span style="font-size: 16px; font-weight: normal; color: var(--text-muted);">/ 100</span></div>
+        <div class="stat-subtext">Across all academic departments</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-header">
+            <span class="stat-label">Highest Score</span>
+            <span class="stat-icon">&#127942;</span>
+        </div>
+        <div class="stat-value" id="kpi-max-marks">{{ max_marks }} <span style="font-size: 16px; font-weight: normal; color: var(--text-muted);">/ 100</span></div>
+        <div class="stat-subtext">Top institutional grade achieve</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-header">
+            <span class="stat-label">Pass Percentage</span>
+            <span class="stat-icon">&#9989;</span>
+        </div>
+        <div class="stat-value" id="kpi-pass-percentage">{{ pass_percentage }}%</div>
+        <div class="stat-subtext" id="kpi-pass-subtext">{{ pass_count }} Passed &bull; {{ fail_count }} At Risk (&lt; 50%)</div>
+    </div>
+</div>
+
+<!-- Interactive Analytics Charts Grid -->
+<div class="grid-2">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Enrollment Distribution by Department</h2>
+        </div>
+        <div class="card-body" style="height: 280px; display: flex; align-items: center; justify-content: center; position: relative;">
+            <canvas id="deptChart"></canvas>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Institutional Grade Breakdown</h2>
+        </div>
+        <div class="card-body" style="height: 280px; display: flex; align-items: center; justify-content: center; position: relative;">
+            <canvas id="gradeChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Department Distribution & Top Performers Grid -->
+<div class="grid-2">
+    <!-- Department Breakdown -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Department Distribution</h2>
+            <span class="badge badge-neutral">{{ dept_stats|length }} Departments</span>
+        </div>
+        <div class="card-body" style="padding: 0;">
+            {% if dept_stats %}
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Department</th>
+                            <th style="text-align: center;">Students</th>
+                            <th style="width: 28%;">Share</th>
+                            <th style="text-align: center;">Pass %</th>
+                            <th style="text-align: right;">Avg Mark</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for dept in dept_stats %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('routes.list_students', dept=dept.department) }}" style="font-weight: 600;">
+                                    {{ dept.department }}
+                                </a>
+                            </td>
+                            <td style="text-align: center;">{{ dept.student_count }}</td>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <div class="progress-bar-container">
+                                        <div class="progress-bar-fill" style="width: {{ dept.percentage }}%;"></div>
+                                    </div>
+                                    <span style="font-size: 12px; color: var(--text-muted); width: 38px;">{{ dept.percentage }}%</span>
+                                </div>
+                            </td>
+                            <td style="text-align: center; font-weight: 600; color: {% if dept.pass_percentage >= 75 %}var(--success){% elif dept.pass_percentage >= 50 %}#b45309{% else %}var(--danger){% endif %};">
+                                {{ dept.pass_percentage }}%
+                            </td>
+                            <td style="text-align: right; font-weight: 600;">
+                                {{ dept.avg_marks }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div style="padding: 32px; text-align: center; color: var(--text-muted);">
+                No departmental data available. Add student records to generate statistics.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Top Performing Students -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Top Academic Performers</h2>
+            <a href="{{ url_for('routes.list_students', sort='marks_desc') }}" class="btn btn-secondary btn-sm">View All</a>
+        </div>
+        <div class="card-body" style="padding: 0;">
+            {% if top_performers %}
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Department</th>
+                            <th style="text-align: center;">Score</th>
+                            <th style="text-align: right;">Grade</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in top_performers %}
+                        <tr>
+                            <td>
+                                <div>
+                                    <a href="{{ url_for('routes.view_student', student_id=student.id) }}" style="font-weight: 600;">
+                                        {{ student.name }}
+                                    </a>
+                                </div>
+                                <div style="font-size: 12px; color: var(--text-muted); font-family: var(--font-mono);">
+                                    {{ student.register_number }}
+                                </div>
+                            </td>
+                            <td>{{ student.department }}</td>
+                            <td style="text-align: center; font-weight: 700; color: var(--primary);">
+                                {{ student.marks }}
+                            </td>
+                            <td style="text-align: right;">
+                                <span class="badge {{ student.grade_info.badge_class }}">
+                                    {{ student.grade_info.grade }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div style="padding: 32px; text-align: center; color: var(--text-muted);">
+                No student records recorded yet.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Recent Student Registrations -->
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Recent Student Enrollments</h2>
+        <a href="{{ url_for('routes.list_students') }}" class="btn btn-secondary btn-sm">Manage All Students</a>
+    </div>
+    <div class="card-body" style="padding: 0;">
+        {% if recent_students %}
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Register No.</th>
+                        <th>Student Name</th>
+                        <th>Department</th>
+                        <th style="text-align: center;">Marks</th>
+                        <th style="text-align: center;">Grade</th>
+                        <th>Registered Date</th>
+                        <th style="text-align: right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in recent_students %}
+                    <tr>
+                        <td style="font-family: var(--font-mono); font-weight: 600;">
+                            {{ student.register_number }}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('routes.view_student', student_id=student.id) }}" style="font-weight: 600;">
+                                {{ student.name }}
+                            </a>
+                        </td>
+                        <td>{{ student.department }}</td>
+                        <td style="text-align: center; font-weight: 600;">{{ student.marks }}</td>
+                        <td style="text-align: center;">
+                            <span class="badge {{ student.grade_info.badge_class }}">
+                                {{ student.grade_info.grade }}
+                            </span>
+                        </td>
+                        <td style="color: var(--text-muted); font-size: 13px;">
+                            {{ student.created_at }}
+                        </td>
+                        <td style="text-align: right;">
+                            <a href="{{ url_for('routes.view_student', student_id=student.id) }}" class="btn btn-secondary btn-sm">
+                                View Profile
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div style="padding: 32px; text-align: center; color: var(--text-muted);">
+            No enrollments found. Use "+ Add Student" to create your first record.
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Low Attendance Shortage Alert Watchlist (<75%) -->
+<div class="card" style="margin-top: 24px;">
+    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h2 class="card-title" style="color: var(--danger);">
+                &#9888; Low Attendance Shortage Watchlist (&lt; 75%)
+            </h2>
+            <p style="font-size: 13px; color: var(--text-muted); margin-top: 2px;">
+                Students at immediate risk of examination detention under the mandatory 75% attendance rule.
+            </p>
+        </div>
+        <a href="{{ url_for('routes.attendance_overview') }}" class="btn btn-secondary btn-sm">
+            Open Attendance Module &rarr;
+        </a>
+    </div>
+    <div class="card-body" style="padding: 0;">
+        {% if low_attendance_students %}
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Student Name</th>
+                        <th>Register Number</th>
+                        <th>Department</th>
+                        <th style="text-align: center;">Attended Classes</th>
+                        <th style="text-align: center;">Total Classes</th>
+                        <th style="text-align: center;">Attendance Rate</th>
+                        <th style="text-align: right;">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for st in low_attendance_students %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('routes.view_student', student_id=st.id) }}" style="font-weight: 600;">
+                                {{ st.name }}
+                            </a>
+                        </td>
+                        <td style="font-family: var(--font-mono); font-size: 13px; font-weight: 600; color: var(--primary);">
+                            {{ st.register_number }}
+                        </td>
+                        <td>{{ st.department }}</td>
+                        <td style="text-align: center;">{{ st.attended_classes }}</td>
+                        <td style="text-align: center;">{{ st.total_classes }}</td>
+                        <td style="text-align: center; font-weight: 700; color: var(--danger);">
+                            {{ st.attendance_percentage }}%
+                        </td>
+                        <td style="text-align: right;">
+                            <span class="badge badge-grade-f">
+                                Shortage Alert
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div style="padding: 24px; text-align: center; color: var(--text-muted);">
+            &#10003; All students currently meet or exceed the mandatory 75% attendance threshold.
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const deptLabels = {{ chart_dept_labels | tojson }};
+    const deptData = {{ chart_dept_data | tojson }};
+    const gradeLabels = {{ chart_grade_labels | tojson }};
+    const gradeData = {{ chart_grade_data | tojson }};
+
+    function isDark() {
+        return document.documentElement.getAttribute('data-theme') === 'dark';
+    }
+
+    function getChartThemeColors() {
+        const dark = isDark();
+        return {
+            textColor: dark ? '#cbd5e1' : '#475569',
+            gridColor: dark ? '#334155' : '#e2e8f0',
+            borderColor: dark ? '#1e293b' : '#ffffff'
+        };
+    }
+
+    let colors = getChartThemeColors();
+    let deptChart = null;
+    let gradeChart = null;
+
+    // 1. Department Enrollment Distribution (Donut Chart)
+    const deptCanvas = document.getElementById('deptChart');
+    if (deptCanvas && deptLabels && deptLabels.length > 0) {
+        deptChart = new Chart(deptCanvas.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: deptLabels,
+                datasets: [{
+                    data: deptData,
+                    backgroundColor: [
+                        '#1e3a8a', '#0284c7', '#0d9488', '#16a34a',
+                        '#d97706', '#dc2626', '#475569', '#7c3aed'
+                    ],
+                    borderColor: colors.borderColor,
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            boxWidth: 12,
+                            font: { size: 11 },
+                            color: colors.textColor
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // 2. Grade Breakdown (Bar Chart)
+    const gradeCanvas = document.getElementById('gradeChart');
+    if (gradeCanvas && gradeLabels) {
+        gradeChart = new Chart(gradeCanvas.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: gradeLabels,
+                datasets: [{
+                    label: 'Students',
+                    data: gradeData,
+                    backgroundColor: [
+                        '#15803d', '#16a34a', '#0284c7', '#475569', '#d97706', '#dc2626'
+                    ],
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: colors.textColor },
+                        grid: { display: false }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        ticks: { stepSize: 1, precision: 0, color: colors.textColor },
+                        grid: { color: colors.gridColor }
+                    }
+                }
+            }
+        });
+    }
+
+    // Expose chart references for live 30s polling data synchronization
+    window.deptChart = deptChart;
+    window.gradeChart = gradeChart;
+
+    // Dynamically re-style charts when theme is toggled
+    const observer = new MutationObserver(function() {
+        const c = getChartThemeColors();
+        if (deptChart) {
+            deptChart.data.datasets[0].borderColor = c.borderColor;
+            deptChart.options.plugins.legend.labels.color = c.textColor;
+            deptChart.update();
+        }
+        if (gradeChart) {
+            gradeChart.options.scales.x.ticks.color = c.textColor;
+            gradeChart.options.scales.y.ticks.color = c.textColor;
+            gradeChart.options.scales.y.grid.color = c.gridColor;
+            gradeChart.update();
+        }
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+});
+</script>
+{% endblock %}

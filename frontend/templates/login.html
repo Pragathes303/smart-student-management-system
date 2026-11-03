@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Sign In{% endblock %}
+
+{% block content %}
+<div class="login-wrapper">
+    <div class="login-card">
+        <div class="login-header">
+            <h2>Welcome Back</h2>
+            <p>Sign in to access your institutional student portal or academic dashboard.</p>
+        </div>
+
+        <form method="POST" action="{{ url_for('auth.login', next=request.args.get('next')) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="form-group">
+                <label for="username" class="form-label">Username <span class="required">*</span></label>
+                <input
+                    type="text"
+                    id="username"
+                    name="username"
+                    class="form-control"
+                    placeholder="Enter your institutional username"
+                    value="{{ username or '' }}"
+                    required
+                    autofocus
+                >
+            </div>
+
+            <div class="form-group">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <label for="password" class="form-label" style="margin-bottom: 0;">Password <span class="required">*</span></label>
+                    <a href="{{ url_for('auth.forgot_password') }}" style="font-size: 12px; color: var(--primary); text-decoration: none;">Forgot password?</a>
+                </div>
+                <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    class="form-control"
+                    placeholder="Enter your account password"
+                    style="margin-top: 6px;"
+                    required
+                >
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;">
+                Sign In
+            </button>
+        </form>
+
+        <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border-color); font-size: 12px; color: var(--text-muted); text-align: center;">
+            Need help accessing your account? Contact your departmental administrator.
+            <div style="margin-top: 6px;">
+                <a href="{{ url_for('routes.privacy_policy') }}" style="color: var(--primary); text-decoration: none;">Privacy &amp; Data Rights Policy</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}Trash Bin (Archived Students) - Smart Student System{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-title">
+        <h1>Trash Bin (Archived Student Records)</h1>
+        <p>Manage soft-deleted student records. You can safely restore records or permanently purge them.</p>
+    </div>
+    <div class="page-actions">
+        <a href="{{ url_for('routes.list_students') }}" class="btn btn-secondary btn-sm">
+            &larr; Back to Active Students
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Archived Records ({{ students|length }})</h2>
+    </div>
+    <div class="card-body" style="padding: 0;">
+        {% if students %}
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Register No</th>
+                        <th>Student Name</th>
+                        <th>Department</th>
+                        <th style="text-align: center;">Marks</th>
+                        <th>Deleted On</th>
+                        <th style="text-align: right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in students %}
+                    <tr>
+                        <td style="font-family: var(--font-mono); font-weight: 600;">{{ s.register_number }}</td>
+                        <td style="font-weight: 600;">{{ s.name }}</td>
+                        <td>{{ s.department }}</td>
+                        <td style="text-align: center;">{{ s.marks }}</td>
+                        <td style="color: var(--text-muted); font-size: 13px;">{{ s.deleted_at }}</td>
+                        <td style="text-align: right; white-space: nowrap;">
+                            <form method="POST" action="{{ url_for('routes.restore_student', student_id=s.id) }}" style="display: inline;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-secondary btn-sm" title="Restore student record">
+                                    Restore
+                                </button>
+                            </form>
+                            <form method="POST" action="{{ url_for('routes.anonymize_student', student_id=s.id) }}" style="display: inline; margin-left: 6px;" onsubmit="return confirm('PRIVACY RIGHT TO ERASURE / ANONYMIZATION:\n\nPermanently ANONYMIZE student \'{{ s.name }}\' ({{ s.register_number }})?\n\nThis strips all personal identifiers while retaining anonymous statistical records. This action cannot be undone.');">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-secondary btn-sm" style="border-color: #f59e0b; color: #b45309;" title="Permanently scrub all personal identifiers (GDPR / Privacy Right to Erasure)">
+                                    Anonymize
+                                </button>
+                            </form>
+                            <form method="POST" action="{{ url_for('routes.hard_delete_student', student_id=s.id) }}" style="display: inline; margin-left: 6px;" onsubmit="return confirmStudentDelete('{{ s.name }}', '{{ s.register_number }}');">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-danger btn-sm" title="Permanently delete from database">
+                                    Purge
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if total_pages and total_pages > 1 %}
+        <div class="pagination-container" style="display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-top: 1px solid var(--border-color);">
+            <div style="font-size: 13px; color: var(--text-muted);">
+                Showing page {{ current_page }} of {{ total_pages }} ({{ total_count }} archived records)
+            </div>
+            <div class="pagination-controls" style="display: flex; gap: 6px;">
+                {% if has_prev %}
+                <a href="{{ url_for('routes.trash_students', page=prev_page) }}" class="btn btn-secondary btn-sm">&larr; Previous</a>
+                {% endif %}
+                <span class="btn btn-secondary btn-sm active" style="pointer-events: none; font-weight: 600;">{{ current_page }}</span>
+                {% if has_next %}
+                <a href="{{ url_for('routes.trash_students', page=next_page) }}" class="btn btn-secondary btn-sm">Next &rarr;</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        {% else %}
+        <div style="text-align: center; padding: 48px 24px; color: var(--text-muted);">
+            <div style="font-size: 36px; margin-bottom: 8px;">&#128465;</div>
+            <h3 style="font-size: 18px; color: var(--text-main);">Trash Bin is Empty</h3>
+            <p style="font-size: 14px; margin-top: 4px;">There are currently no deleted student records.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

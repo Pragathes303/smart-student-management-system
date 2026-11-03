@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}Privacy Policy &amp; Data Minimization Notice - Smart Student System{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-title">
+        <h1>Student Privacy Policy &amp; Data Minimization Notice</h1>
+        <p>Institutional commitment to data privacy, protection of personal records, and student rights.</p>
+    </div>
+    <div class="page-actions">
+        {% if current_user %}
+            {% if current_user.role == 'student' %}
+            <a href="{{ url_for('routes.student_portal') }}" class="btn btn-secondary btn-sm">&larr; Back to My Portal</a>
+            {% else %}
+            <a href="{{ url_for('routes.dashboard') }}" class="btn btn-secondary btn-sm">&larr; Back to Dashboard</a>
+            {% endif %}
+        {% else %}
+        <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-sm">Sign In</a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card" style="margin-bottom: 24px;">
+    <div class="card-header" style="background: linear-gradient(135deg, rgba(37,99,235,0.06), rgba(79,70,229,0.03)); border-bottom: 1px solid var(--border-color);">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 40px; height: 40px; border-radius: 10px; background: var(--primary); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                &#128274;
+            </div>
+            <div>
+                <h2 class="card-title" style="margin: 0; font-size: 18px;">Core Privacy Principles &amp; Governance</h2>
+                <div style="font-size: 13px; color: var(--text-muted); margin-top: 2px;">
+                    Applicable to all students, academic staff, and system administrators.
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card-body" style="padding: 24px; line-height: 1.7; color: var(--text-main);">
+        <p style="margin-top: 0; font-size: 15px;">
+            Student records constitute sensitive <strong>Personal Data</strong>. Our institutional information systems are designed in accordance with global data protection frameworks (including the Digital Personal Data Protection Act, GDPR principles, and FERPA standards). We guarantee strict adherence to the fundamental principle of <strong>Data Minimization</strong>: collecting only what is strictly necessary, protecting it with industry-standard controls, and granting students complete control over their personal identity.
+        </p>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin: 24px 0;">
+            <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 18px;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                    <span style="color: var(--primary); font-size: 18px;">&#10004;</span>
+                    <h3 style="margin: 0; font-size: 15px; font-weight: 700;">1. Minimum-Data Principle</h3>
+                </div>
+                <p style="margin: 0; font-size: 13.5px; color: var(--text-muted);">
+                    We collect only academic identifiers (Name, Register Number, Department, Institutional Email, Marks &amp; Attendance). Optional contact points (Phone &amp; Date of Birth) can be omitted or updated at will. We never collect biometric, racial, financial, or political data.
+                </p>
+            </div>
+
+            <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 18px;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                    <span style="color: var(--primary); font-size: 18px;">&#128101;</span>
+                    <h3 style="margin: 0; font-size: 15px; font-weight: 700;">2. Role Isolation &amp; Zero IDOR</h3>
+                </div>
+                <p style="margin: 0; font-size: 13.5px; color: var(--text-muted);">
+                    Students are strictly isolated and can exclusively inspect their own performance. Cross-student directory searches and mark queries are cryptographically blocked and rejected with HTTP 403 on server boundaries.
+                </p>
+            </div>
+
+            <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 18px;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                    <span style="color: var(--primary); font-size: 18px;">&#128065;</span>
+                    <h3 style="margin: 0; font-size: 15px; font-weight: 700;">3. Public Verification Privacy</h3>
+                </div>
+                <p style="margin: 0; font-size: 13.5px; color: var(--text-muted);">
+                    Official transcript QR codes point to a high-entropy public verification token. The verification page confirms only degree authenticity and CGPA, never revealing phone numbers, home addresses, photos, or personal contact info.
+                </p>
+            </div>
+
+            <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 18px;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                    <span style="color: var(--primary); font-size: 18px;">&#9851;</span>
+                    <h3 style="margin: 0; font-size: 15px; font-weight: 700;">4. Right to Erasure &amp; Anonymization</h3>
+                </div>
+                <p style="margin: 0; font-size: 13.5px; color: var(--text-muted);">
+                    Upon graduation or departure, students can exercise their Right to be Forgotten. Administrators possess one-click capabilities to permanently purge or irreversibly anonymize all PII while retaining anonymous institutional metrics.
+                </p>
+            </div>
+        </div>
+
+        <h3 style="font-size: 16px; margin-top: 24px; margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+            Detailed Data Processing Breakdown
+        </h3>
+        <div class="table-responsive">
+            <table class="data-table" style="font-size: 13px;">
+                <thead>
+                    <tr>
+                        <th>Data Category</th>
+                        <th>Specific Fields</th>
+                        <th>Purpose of Processing</th>
+                        <th>Retention &amp; Anonymization</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="font-weight: 600;">Core Identity</td>
+                        <td>Full Name, Register Number</td>
+                        <td>Official student identification, grading, and degree conferral.</td>
+                        <td>Permanent or scrambled upon Right to Erasure request.</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 600;">Academic Performance</td>
+                        <td>Department, Course Marks, Credits, GPA/CGPA</td>
+                        <td>Curricular evaluation, university semester accreditation.</td>
+                        <td>Retained anonymously for institutional cohort statistics.</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 600;">Contact &amp; Emergency</td>
+                        <td>Institutional Email, Optional Phone, Optional DOB</td>
+                        <td>Result alerts, password resets, official correspondence.</td>
+                        <td>Immediately scrubbed upon student anonymization or purge.</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 600;">Biometric / Avatar</td>
+                        <td>Profile Photo (optional)</td>
+                        <td>Student portal personalization and ID verification.</td>
+                        <td>Physically deleted from local and cloud storage upon erasure.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div style="margin-top: 24px; padding: 16px 20px; background-color: rgba(16,185,129,0.06); border: 1px solid rgba(16,185,129,0.25); border-radius: var(--radius-md);">
+            <div style="font-weight: 700; color: #065f46; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                <span>&#128737;</span> Technical Safeguards in Effect
+            </div>
+            <div style="font-size: 13px; color: #047857;">
+                All network requests modifying state require anti-forgery CSRF tokens; sessions are governed by <code>HttpOnly</code>, <code>SameSite=Lax</code>, and HSTS headers; all database operations strictly use parameterized SQL; and administrator audit logs record all data mutations without storing plaintext user credentials.
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,303 @@
+{% extends "base.html" %}
+
+{% block title %}Student Records{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-title">
+        <h1>Student Directory</h1>
+        <p>Comprehensive register of all student academic profiles and credentials.</p>
+    </div>
+    <div class="page-actions">
+        <a href="{{ url_for('routes.import_students') }}" class="btn btn-secondary btn-sm" title="Bulk Upload Students from CSV">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            Import CSV
+        </a>
+        <a href="{{ url_for('routes.export_students_csv', q=search_query, dept=selected_dept, year=selected_year, grade=selected_grade, status=selected_status) }}" class="btn btn-secondary btn-sm" title="Export as CSV">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Export CSV
+        </a>
+        <a href="{{ url_for('routes.export_students_excel', q=search_query, dept=selected_dept, year=selected_year, grade=selected_grade, status=selected_status) }}" class="btn btn-secondary btn-sm" title="Export as Excel (.xlsx)">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+                <polyline points="10 9 9 9 8 9"/>
+            </svg>
+            Export Excel
+        </a>
+        <a href="{{ url_for('routes.add_student') }}" class="btn btn-primary btn-sm">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            + Add New Student
+        </a>
+    </div>
+</div>
+
+<!-- Search and Filtering Filter Bar -->
+<div class="filter-card">
+    <form method="GET" action="{{ url_for('routes.list_students') }}" class="filter-form">
+        <!-- Search Keyword -->
+        <div class="filter-item-lg">
+            <label for="q" class="form-label">Search Query</label>
+            <input
+                type="text"
+                id="q"
+                name="q"
+                class="form-control"
+                placeholder="Search by name, register number, or email..."
+                value="{{ search_query }}"
+            >
+        </div>
+
+        <!-- Department Filter -->
+        <div class="filter-item">
+            <label for="dept" class="form-label">Department</label>
+            <select id="dept" name="dept" class="form-control">
+                <option value="">All Departments</option>
+                {% for dept in departments %}
+                <option value="{{ dept }}" {% if selected_dept == dept %}selected{% endif %}>
+                    {{ dept }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Academic Year Filter -->
+        <div class="filter-item">
+            <label for="year" class="form-label">Year</label>
+            <select id="year" name="year" class="form-control">
+                <option value="">All Years</option>
+                <option value="1" {% if selected_year == 1 or selected_year == '1' %}selected{% endif %}>Year 1</option>
+                <option value="2" {% if selected_year == 2 or selected_year == '2' %}selected{% endif %}>Year 2</option>
+                <option value="3" {% if selected_year == 3 or selected_year == '3' %}selected{% endif %}>Year 3</option>
+                <option value="4" {% if selected_year == 4 or selected_year == '4' %}selected{% endif %}>Year 4</option>
+            </select>
+        </div>
+
+        <!-- Grade Filter -->
+        <div class="filter-item">
+            <label for="grade" class="form-label">Grade / Status</label>
+            <select id="grade" name="grade" class="form-control">
+                <option value="">All Grades</option>
+                <optgroup label="Anna University Scale">
+                    <option value="O" {% if selected_grade == 'O' %}selected{% endif %}>O (90 - 100)</option>
+                    <option value="A+" {% if selected_grade == 'A+' %}selected{% endif %}>A+ (80 - 89)</option>
+                    <option value="A" {% if selected_grade == 'A' %}selected{% endif %}>A (70 - 79)</option>
+                    <option value="B+" {% if selected_grade == 'B+' %}selected{% endif %}>B+ (60 - 69)</option>
+                    <option value="B" {% if selected_grade == 'B' %}selected{% endif %}>B (50 - 59)</option>
+                    <option value="RA" {% if selected_grade == 'RA' %}selected{% endif %}>RA (&lt; 50)</option>
+                </optgroup>
+                <optgroup label="Academic Standing">
+                    <option value="pass" {% if selected_grade == 'pass' or selected_status == 'pass' %}selected{% endif %}>Passing (&ge; 50)</option>
+                    <option value="fail" {% if selected_grade == 'fail' or selected_status == 'fail' %}selected{% endif %}>At Risk (&lt; 50)</option>
+                    <option value="distinction" {% if selected_grade == 'distinction' %}selected{% endif %}>Distinction (&ge; 80)</option>
+                </optgroup>
+            </select>
+        </div>
+
+        <!-- Sort Order -->
+        <div class="filter-item">
+            <label for="sort" class="form-label">Sort By</label>
+            <select id="sort" name="sort" class="form-control">
+                <option value="name_asc" {% if selected_sort == 'name_asc' %}selected{% endif %}>Name (A-Z)</option>
+                <option value="name_desc" {% if selected_sort == 'name_desc' %}selected{% endif %}>Name (Z-A)</option>
+                <option value="marks_desc" {% if selected_sort == 'marks_desc' %}selected{% endif %}>Marks (High-Low)</option>
+                <option value="marks_asc" {% if selected_sort == 'marks_asc' %}selected{% endif %}>Marks (Low-High)</option>
+                <option value="reg_asc" {% if selected_sort == 'reg_asc' %}selected{% endif %}>Register Number</option>
+                <option value="date_desc" {% if selected_sort == 'date_desc' %}selected{% endif %}>Recently Added</option>
+            </select>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="filter-item-action">
+            <button type="submit" class="btn btn-primary" title="Filter student records">
+                Filter
+            </button>
+            {% if search_query or selected_dept or selected_year or selected_grade or selected_status or (selected_sort and selected_sort != 'name_asc') %}
+            <a href="{{ url_for('routes.list_students') }}" class="btn btn-secondary" title="Reset all filters">
+                Reset
+            </a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+
+<!-- Student Records Table -->
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Active Student Roster</h2>
+        <span class="badge badge-neutral">{{ total_count }} {{ 'Student' if total_count == 1 else 'Students' }} Found</span>
+    </div>
+    <div class="card-body" style="padding: 0;">
+        {% if students %}
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Student Profile</th>
+                        <th>Register No.</th>
+                        <th>Department</th>
+                        <th style="text-align: center; width: 70px;">Year</th>
+                        <th>Email Address</th>
+                        <th style="text-align: center;">Marks</th>
+                        <th style="text-align: center;">Grade</th>
+                        <th style="text-align: center;">Attendance</th>
+                        <th style="text-align: right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in students %}
+                    <tr>
+                        <td>
+                            <div class="table-student-cell">
+                                {% if student.photo_url %}
+                                <img src="{{ student.photo_url }}" alt="{{ student.name }}" class="student-avatar-sm">
+                                {% else %}
+                                <div class="student-avatar-sm">
+                                    {{ student.name[:2]|upper }}
+                                </div>
+                                {% endif %}
+                                <div>
+                                    <a href="{{ url_for('routes.view_student', student_id=student.id) }}" style="font-weight: 600;">
+                                        {{ student.name }}
+                                    </a>
+                                </div>
+                            </div>
+                        </td>
+                        <td style="font-family: var(--font-mono); font-size: 13px; font-weight: 600;">
+                            {{ student.register_number }}
+                        </td>
+                        <td>{{ student.department }}</td>
+                        <td style="text-align: center; font-size: 13px; color: var(--text-muted);">
+                            Year {{ student.year }}
+                        </td>
+                        <td style="color: var(--text-muted); font-size: 13px;">
+                            {{ student.email }}
+                        </td>
+
+                        <td style="text-align: center; font-weight: 700; color: var(--primary);">
+                            {{ student.marks }}
+                        </td>
+                        <td style="text-align: center;">
+                            <span class="badge {{ student.grade_info.badge_class }}">
+                                {{ student.grade_info.grade }}
+                            </span>
+                        </td>
+                        <td style="text-align: center;">
+                            {% if student.attendance_pct is not none %}
+                            <span class="badge {{ student.attendance_info.badge_class }}" title="{{ student.attendance_info.status }}">
+                                {{ student.attendance_pct }}%
+                            </span>
+                            {% else %}
+                            <span style="color: var(--text-muted); font-size: 12px;">--</span>
+                            {% endif %}
+                        </td>
+                        <td style="text-align: right;">
+                            <div style="display: inline-flex; gap: 6px; align-items: center;">
+                                <a href="{{ url_for('routes.view_student', student_id=student.id) }}" class="btn btn-secondary btn-sm" title="View Student Profile">
+                                    View
+                                </a>
+                                <a href="{{ url_for('routes.edit_student', student_id=student.id) }}" class="btn btn-secondary btn-sm" title="Edit Record">
+                                    Edit
+                                </a>
+                                {% if current_user.role == 'admin' %}
+                                <form
+                                    method="POST"
+                                    action="{{ url_for('routes.delete_student', student_id=student.id) }}"
+                                    style="display: inline;"
+                                    onsubmit="return confirmStudentDelete('{{ student.name }}', '{{ student.register_number }}');"
+                                >
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-danger btn-sm" title="Delete Student Record">
+                                        Delete
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if total_pages > 1 %}
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-top: 1px solid var(--border-color); background-color: #fafbfc; flex-wrap: wrap; gap: 10px;">
+            <div style="font-size: 13px; color: var(--text-muted);">
+                Showing Page <strong>{{ current_page }}</strong> of <strong>{{ total_pages }}</strong> ({{ total_count }} total students)
+            </div>
+            <div style="display: flex; gap: 6px; align-items: center;">
+                {% if has_prev %}
+                <a href="{{ url_for('routes.list_students', page=prev_page, q=search_query, dept=selected_dept, year=selected_year, grade=selected_grade, status=selected_status, sort=selected_sort) }}" class="btn btn-secondary btn-sm">
+                    &larr; Previous
+                </a>
+                {% else %}
+                <span class="btn btn-secondary btn-sm" style="opacity: 0.5; cursor: not-allowed;">
+                    &larr; Previous
+                </span>
+                {% endif %}
+
+                {% for p in range(1, total_pages + 1) %}
+                    {% if p == current_page %}
+                    <span class="btn btn-primary btn-sm" style="min-width: 32px; padding: 0 8px;">{{ p }}</span>
+                    {% elif p <= 3 or p >= total_pages - 1 or (p >= current_page - 1 and p <= current_page + 1) %}
+                    <a href="{{ url_for('routes.list_students', page=p, q=search_query, dept=selected_dept, year=selected_year, grade=selected_grade, status=selected_status, sort=selected_sort) }}" class="btn btn-secondary btn-sm" style="min-width: 32px; padding: 0 8px;">
+                        {{ p }}
+                    </a>
+                    {% elif p == 4 or p == total_pages - 2 %}
+                    <span style="color: var(--text-muted); padding: 0 4px;">...</span>
+                    {% endif %}
+                {% endfor %}
+
+                {% if has_next %}
+                <a href="{{ url_for('routes.list_students', page=next_page, q=search_query, dept=selected_dept, year=selected_year, grade=selected_grade, status=selected_status, sort=selected_sort) }}" class="btn btn-secondary btn-sm">
+                    Next &rarr;
+                </a>
+                {% else %}
+                <span class="btn btn-secondary btn-sm" style="opacity: 0.5; cursor: not-allowed;">
+                    Next &rarr;
+                </span>
+                {% endif %}
+
+            </div>
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon" aria-hidden="true">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="8" y1="12" x2="16" y2="12"></line>
+                </svg>
+            </div>
+            <h3 class="empty-state-title">No students found</h3>
+            <p class="empty-state-text">
+                {% if search_query or selected_dept or selected_year or selected_grade or selected_status %}
+                No matching students found for your search criteria. Try adjusting your filters or register a new student.
+                {% else %}
+                There are currently no active students registered in the academic directory.
+                {% endif %}
+            </p>
+            <div class="empty-state-actions">
+                <a href="{{ url_for('routes.add_student') }}" class="btn btn-primary btn-sm">+ Add New Student</a>
+                {% if search_query or selected_dept or selected_year or selected_grade or selected_status or (selected_sort and selected_sort != 'name_asc') %}
+                <a href="{{ url_for('routes.list_students') }}" class="btn btn-secondary btn-sm" style="margin-left: 8px;">Clear Search</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
