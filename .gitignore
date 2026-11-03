@@ -1,0 +1,50 @@
+# Byte-compiled / optimized files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# SQLite Database & Backups
+*.db
+*.sqlite
+*.sqlite3
+*.bak
+database/*.db
+database/*.db-journal
+database/*.db-wal
+database/*.db-shm
+database/*.bak
+backups/
+
+
+# Environment variables (contains secrets)
+.env
+.env.*
+!.env.example
+
+# Uploaded files and media (local storage)
+frontend/static/uploads/*
+!frontend/static/uploads/.gitkeep
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# Application logs
+logs/
+*.log
+
+# Test, coverage, and cache artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+.ruff_cache/
+
+# IDE, OS & Archive files
+.vscode/
+.idea/
+instance/
+*.zip
+.DS_Store
+Thumbs.db

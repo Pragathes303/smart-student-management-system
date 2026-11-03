@@ -1,0 +1,32 @@
+services:
+  student-system:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: student_management_system
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    env_file:
+      - .env
+    volumes:
+      - db_data:/app/database
+      - log_data:/app/logs
+      - upload_data:/app/frontend/static/uploads
+    environment:
+      - FLASK_ENV=production
+      - PYTHONUNBUFFERED=1
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+volumes:
+  db_data:
+    driver: local
+  log_data:
+    driver: local
+  upload_data:
+    driver: local

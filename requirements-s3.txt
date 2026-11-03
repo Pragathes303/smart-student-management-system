@@ -1,0 +1,4 @@
+# Optional AWS S3 Cloud Storage Dependencies
+# Install only if STORAGE_BACKEND=s3 is configured
+boto3>=1.34.0
+botocore>=1.34.0

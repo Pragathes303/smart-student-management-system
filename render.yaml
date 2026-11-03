@@ -1,0 +1,32 @@
+# ==============================================================================
+# Render.com Cloud Deployment Blueprint
+# Automatically builds, initializes PostgreSQL/SQLite database, and runs Gunicorn WSGI server.
+# ==============================================================================
+
+services:
+  - type: web
+    name: smart-student-management-system
+    runtime: python
+    plan: free
+    region: oregon
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt && python database/init_db.py
+    startCommand: gunicorn --workers 2 --timeout 90 --bind 0.0.0.0:$PORT app:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.8
+      - key: FLASK_ENV
+        value: production
+      - key: FLASK_DEBUG
+        value: "0"
+      - key: STORAGE_BACKEND
+        value: local
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+      - key: ADMIN_USERNAME
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: ADMIN_EMAIL
+        sync: false
