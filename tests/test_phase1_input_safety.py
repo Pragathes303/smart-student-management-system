@@ -343,6 +343,8 @@ def test_hsts_header_in_production(monkeypatch, tmp_path):
 
     monkeypatch.setenv('FLASK_ENV', 'production')
     monkeypatch.setenv('FLASK_DEBUG', '0')
+    monkeypatch.setenv('ADMIN_USERNAME', 'admin')
+    monkeypatch.setenv('ADMIN_PASSWORD', 'AdminPassword123!')
 
     class ProdEnvConfig(Config):
         TESTING = True
