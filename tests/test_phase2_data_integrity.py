@@ -16,10 +16,10 @@ import sqlite3
 import tempfile
 import time
 from datetime import datetime, timedelta
+
 import pytest
 
-from backend.logger import record_audit, record_marks_history
-from backend.services.student_service import StudentService
+from backend.logger import record_marks_history
 from database.backup_db import backup_database, restore_database, rotate_backups, verify_integrity
 from database.db import get_db, query_db, transaction
 

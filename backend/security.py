@@ -49,7 +49,7 @@ def sanitize_csv_cell(value: str | None) -> str:
     """
     if value is None:
         return ""
-    val_str = str(value)
+    val_str = str(value).replace("\x00", "")
     if val_str and val_str[0] in CSV_INJECTION_PREFIXES:
         return f"'{val_str}"
     return val_str
@@ -59,7 +59,7 @@ def desanitize_csv_cell(value: str | None) -> str:
     """Strip defensive single-quote prefix added during CSV sanitization if present."""
     if not value:
         return ""
-    val_str = str(value).strip()
+    val_str = str(value).replace("\x00", "").strip()
     if val_str.startswith("'") and len(val_str) > 1 and val_str[1] in CSV_INJECTION_PREFIXES:
         return val_str[1:]
     return val_str

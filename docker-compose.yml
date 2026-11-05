@@ -10,12 +10,14 @@ services:
     env_file:
       - .env
     volumes:
-      - db_data:/app/database
+      - db_data:/app/data
       - log_data:/app/logs
       - upload_data:/app/frontend/static/uploads
     environment:
       - FLASK_ENV=production
       - PYTHONUNBUFFERED=1
+      - DATABASE_PATH=/app/data/students.db
+      - DATABASE_URL=sqlite:////app/data/students.db
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
       interval: 30s

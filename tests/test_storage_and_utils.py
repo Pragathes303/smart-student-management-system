@@ -4,18 +4,24 @@ Provides targeted unit test coverage for edge cases, validation functions, and l
 """
 
 import io
+
 from PIL import Image
-from backend.storage import LocalStorageHandler, S3StorageHandler, get_storage
-from backend.utils import (
-    allowed_file, get_valid_departments, calculate_grade,
-    calculate_subject_grade_point, calculate_gpa,
-    get_attendance_status, validate_student_data, validate_user_data
-)
+
+from backend.grading import format_cgpa_report, get_grade_info
 from backend.security import (
-    is_safe_redirect, sanitize_csv_cell, desanitize_csv_cell,
-    validate_and_sanitize_image, generate_temp_password, validate_password_strength
+    desanitize_csv_cell,
+    generate_temp_password,
+    is_safe_redirect,
+    sanitize_csv_cell,
+    validate_and_sanitize_image,
+    validate_password_strength,
 )
-from backend.grading import get_grade_info, calculate_cgpa, format_cgpa_report
+from backend.storage import LocalStorageHandler, S3StorageHandler
+from backend.utils import (
+    allowed_file,
+    get_attendance_status,
+    validate_user_data,
+)
 
 
 def test_local_storage_lifecycle(tmp_path):

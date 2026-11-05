@@ -7,15 +7,7 @@ Validates B11 requirements:
 - Arrears detection & academic standing
 """
 
-import pytest
-from backend.grading import (
-    get_grade_info,
-    get_grade_and_points,
-    calculate_grade,
-    calculate_cgpa,
-    calculate_sgpa,
-    calculate_semester_and_overall_gpa
-)
+from backend.grading import calculate_cgpa, calculate_semester_and_overall_gpa, get_grade_and_points, get_grade_info
 
 
 def test_anna_university_grade_boundaries():

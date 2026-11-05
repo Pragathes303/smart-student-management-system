@@ -11,11 +11,11 @@ Comprehensive Test Suite for Phase 5 Features:
 9 & 10. CLI management commands (backup-db, init-db, create-admin, seed-demo).
 """
 
-import os
 import io
-import pytest
+import os
+
 from backend.security import generate_password_reset_token
-from database.db import query_db, execute_db
+from database.db import execute_db, query_db
 
 
 def test_forgot_and_reset_password_flow(client, app):
@@ -348,7 +348,6 @@ def test_export_students_excel_student_forbidden(student_client):
 
 def test_export_students_excel_admin_success(admin_client):
     """Admin role can export records to a valid Excel (.xlsx) workbook."""
-    import io
     import openpyxl
 
     res = admin_client.get('/students/export-excel')

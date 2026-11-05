@@ -156,7 +156,8 @@ def test_init_db_postgres_schema_adaptation(monkeypatch):
 
 
 def test_execute_db_postgres_existing_returning():
-    """Verify execute_db does not append a duplicate RETURNING id when already provided."""
+    """Verify execute_db does not append a duplicate RETURNING id when already provide
+    d."""
     mock_cursor = MagicMock()
     mock_cursor.fetchone.return_value = {'id': 99}
     mock_cursor.rowcount = 1

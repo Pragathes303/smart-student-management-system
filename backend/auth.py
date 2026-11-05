@@ -303,6 +303,11 @@ def logout():
 
 
 @auth_bp.route('/forgot-password', methods=['GET', 'POST'])
+@limiter.limit(
+    "5/15 minutes",
+    methods=['POST'],
+    exempt_when=lambda: current_app.config.get('TESTING') and not current_app.config.get('TEST_RATE_LIMITER')
+)
 def forgot_password():
     """Request password reset link via signed cryptographic token (Feature 1)."""
     if request.method == 'POST':
@@ -349,6 +354,11 @@ This secure link will expire in 24 hours. If you did not request this, please ig
 
 
 @auth_bp.route('/reset-password/<string:token>', methods=['GET', 'POST'])
+@limiter.limit(
+    "10/15 minutes",
+    methods=['POST'],
+    exempt_when=lambda: current_app.config.get('TESTING') and not current_app.config.get('TEST_RATE_LIMITER')
+)
 def reset_password(token):
     """Set new password using signed cryptographic token (Feature 1)."""
     token_data = verify_password_reset_token_data(token, current_app.config['SECRET_KEY'], max_age=86400)

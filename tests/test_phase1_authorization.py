@@ -16,9 +16,10 @@ Validates:
 """
 
 import ast
-import pytest
-from database.db import execute_db, query_db
+
 from werkzeug.security import generate_password_hash
+
+from database.db import execute_db, query_db
 
 
 def test_admin_required_blocks_staff(staff_client):

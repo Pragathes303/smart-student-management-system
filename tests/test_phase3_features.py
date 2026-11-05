@@ -16,12 +16,10 @@ Covers:
 """
 
 import io
-import json
+
 import openpyxl
-import pytest
 
 from backend.grading import (
-    calculate_cgpa,
     calculate_semester_and_overall_gpa,
     calculate_sgpa,
     get_grade_and_points,

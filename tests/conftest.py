@@ -5,9 +5,10 @@ and user fixtures for admin, staff, and student roles.
 """
 
 import os
+import sqlite3
 import sys
 import tempfile
-import sqlite3
+
 import pytest
 from werkzeug.security import generate_password_hash
 
@@ -18,7 +19,7 @@ if PROJECT_ROOT not in sys.path:
 
 from backend.app import create_app
 from backend.config import Config
-from database.db import init_db, execute_db, query_db
+from database.db import execute_db, init_db
 from database.init_db import migrate_tables
 
 

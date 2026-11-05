@@ -10,23 +10,19 @@ Additional Comprehensive Test Suite:
 8. Migrations: Idempotent database migrations without data loss or re-seeding.
 """
 
-import os
 import io
-import pytest
+import os
 from unittest.mock import MagicMock, patch
-from werkzeug.security import generate_password_hash
+
+import pytest
+
 from backend.app import create_app
 from backend.config import Config
-from backend.security import (
-    validate_password_strength,
-    generate_secure_token,
-    sanitize_csv_cell,
-    desanitize_csv_cell
-)
-from backend.storage import S3StorageHandler, LocalStorageHandler, get_storage
 from backend.mailer import send_student_marksheet_email, send_welcome_student_email
-from database.db import query_db, execute_db
-from database.init_db import migrate_tables, seed_database
+from backend.security import generate_secure_token, validate_password_strength
+from backend.storage import LocalStorageHandler, S3StorageHandler, get_storage
+from database.db import execute_db, query_db
+from database.init_db import migrate_tables
 
 
 # -----------------------------------------------------------------------------
@@ -206,6 +202,7 @@ def test_limiter_redis_storage_configuration(monkeypatch):
     """Verify Config reads REDIS_URL for rate limiting when RATELIMIT_STORAGE_URI is unset."""
     monkeypatch.setenv('REDIS_URL', 'redis://localhost:6379/0')
     from importlib import reload
+
     import backend.config
     reload(backend.config)
     assert backend.config.Config.RATELIMIT_STORAGE_URI == 'redis://localhost:6379/0'
@@ -325,7 +322,7 @@ def test_api_tokens_crud_and_openapi(admin_client, client):
     res_token = admin_client.post('/api/v1/tokens', json={
         'name': 'CI Test Service Token',
         'role': 'staff'
-    })
+    }, headers={'X-CSRFToken': 'test-csrf'})
     assert res_token.status_code == 201
     token_val = res_token.get_json()['token']
     token_id = res_token.get_json()['id']
@@ -340,7 +337,7 @@ def test_api_tokens_crud_and_openapi(admin_client, client):
     assert res_auth.status_code == 200
 
     # Delete (Revoke) the API Token
-    res_del = admin_client.delete(f'/api/v1/tokens/{token_id}')
+    res_del = admin_client.delete(f'/api/v1/tokens/{token_id}', headers={'X-CSRFToken': 'test-csrf'})
     assert res_del.status_code == 200
 
     # Token should no longer authenticate
@@ -470,9 +467,10 @@ def test_student_soft_delete_restore_and_purge_lifecycle(admin_client, app):
 # -----------------------------------------------------------------------------
 def test_mailer_live_smtp_and_async(app):
     """Test live SMTP dispatch, retries, and async workers."""
-    from backend.mailer import send_email_message, send_email_async
-    from backend.async_tasks import run_in_background
     import smtplib
+
+    from backend.async_tasks import run_in_background
+    from backend.mailer import send_email_async, send_email_message
 
     with app.app_context():
         # Test simulated mode (default)
@@ -643,7 +641,6 @@ def test_root_health_endpoint(client):
 
 def test_database_url_configuration_parsing():
     """Test DATABASE_URL handling with postgres:// prefix modernization."""
-    import os
     os.environ['DATABASE_URL'] = 'postgres://user:pass@dbhost:5432/dbname'
     test_url = os.environ['DATABASE_URL'].replace('postgres://', 'postgresql://', 1)
     assert test_url.startswith('postgresql://')

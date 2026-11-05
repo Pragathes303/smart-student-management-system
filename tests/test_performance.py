@@ -6,12 +6,9 @@ Validates:
 - Async email worker pool execution without blocking HTTP threads.
 """
 
-import pytest
-import sqlite3
-from database.db import query_db, execute_db
+from backend.async_tasks import run_in_background
 from backend.cache import dashboard_cache
 from backend.services.student_service import StudentService
-from backend.async_tasks import run_in_background
 
 
 def test_dashboard_cache_ttl_and_write_invalidation(app, admin_client):

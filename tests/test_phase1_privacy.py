@@ -10,12 +10,9 @@ Verifies:
 6. Complete database purge via hard-delete.
 """
 
-import io
-import pytest
 from werkzeug.security import generate_password_hash
 
-from backend.services.student_service import StudentService
-from database.db import query_db, execute_db
+from database.db import execute_db, query_db
 
 
 # -----------------------------------------------------------------------------
@@ -54,7 +51,7 @@ def test_minimum_data_in_public_verification(client, app):
             ("Privacy Test Student", "PRIV2026", "Computer Science", "priv@institution.edu", 91.0, "+19876543210", "2001-05-15", "404 Private Road", "priv_secure_token_12345"),
             commit=True
         )
-        st_id = ins['lastrowid']
+        _st_id = ins['lastrowid']
 
     # Query public verify URL using token
     res = client.get('/verify/priv_secure_token_12345')
@@ -198,6 +195,7 @@ def test_anonymized_user_cannot_log_in(client, app, admin_client):
 
     # Verify initial login works
     res_login_before = client.post('/login', data={'username': 'logintest01', 'password': 'InitialPass123!'}, follow_redirects=True)
+    assert res_login_before.status_code == 200
     # Admin anonymizes the student
     res_anon = admin_client.post(f'/students/{sid}/anonymize')
     assert res_anon.status_code in (200, 302)

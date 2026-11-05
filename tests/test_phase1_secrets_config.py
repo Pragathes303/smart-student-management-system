@@ -11,10 +11,8 @@ Verifies:
 import os
 import re
 from pathlib import Path
-import pytest
-from dotenv import dotenv_values
 
-from backend.config import Config, PROJECT_ROOT
+from backend.config import PROJECT_ROOT, Config
 
 
 def test_debug_off_by_default(monkeypatch):

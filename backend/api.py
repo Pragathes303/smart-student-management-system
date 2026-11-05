@@ -7,9 +7,12 @@ Supports both active session RBAC and cryptographic Bearer API Tokens (SHA-256 h
 import hashlib
 from functools import wraps
 
-from flask import Blueprint, jsonify, render_template_string, request
+from flask import Blueprint, current_app, jsonify, render_template_string, request
+from flask_limiter.util import get_remote_address
+from flask_wtf.csrf import validate_csrf
 
 from backend.auth import get_current_user
+from backend.limiter import limiter
 from backend.logger import record_audit
 from backend.security import generate_secure_token
 from backend.storage import get_storage
@@ -53,6 +56,19 @@ def authenticate_api_request(allowed_roles=('admin', 'staff')):
     if user:
         if user.get('role') not in allowed_roles:
             return False, (jsonify({'error': 'Forbidden', 'message': f"User role '{user.get('role')}' is not authorized."}), 403)
+
+        # Mutating methods on /api/v1/* must reject session auth without valid CSRF
+        if request.method in ('POST', 'PUT', 'PATCH', 'DELETE'):
+            csrf_token = request.headers.get('X-CSRFToken') or request.headers.get('X-CSRF-Token')
+            if not csrf_token:
+                return False, (jsonify({'error': 'Forbidden', 'message': 'CSRF token missing in X-CSRFToken header for mutating session request.'}), 403)
+
+            if current_app.config.get('WTF_CSRF_ENABLED', True):
+                try:
+                    validate_csrf(csrf_token)
+                except Exception:
+                    return False, (jsonify({'error': 'Forbidden', 'message': 'Invalid or expired CSRF token in X-CSRFToken header.'}), 403)
+
         return True, {'type': 'session', 'role': user['role'], 'user_id': user['id']}
 
     # 3. Unauthenticated rejection
@@ -70,6 +86,28 @@ def api_auth_required(allowed_roles=('admin', 'staff')):
             return f(*args, **kwargs)
         return wrapper
     return decorator
+
+
+def get_api_rate_limit_key():
+    auth_header = request.headers.get('Authorization', '').strip()
+    if auth_header.startswith('Bearer '):
+        return f"token:{auth_header[7:].strip()}"
+    return f"ip:{get_remote_address()}"
+
+
+def is_api_rate_limit_exempt():
+    if current_app.config.get('TESTING') and not current_app.config.get('TEST_RATE_LIMITER'):
+        return True
+    if request.path in ('/api/docs', '/api/v1/openapi.json', '/api/v1/health'):
+        return True
+    return False
+
+
+limiter.limit(
+    "60/minute",
+    key_func=get_api_rate_limit_key,
+    exempt_when=is_api_rate_limit_exempt
+)(api_bp)
 
 
 # -----------------------------------------------------------------------------

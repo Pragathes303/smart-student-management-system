@@ -10,7 +10,7 @@ All notable changes, security hardenings, architectural remediations, and newly 
 - **S1 (Broken Access Control & IDOR)**: Implemented strict Role-Based Access Control (`@admin_required`, `@staff_required`, `@login_required`) across all routes and API endpoints. Enforced student self-isolation so students can only view/edit their own profile and marks.
 - **S2 (API Auth & Token Bypass)**: Secured `/api/v1/*` with dual authentication support: Bearer token verification or authenticated user session. Eliminated unauthorized JSON data leakage.
 - **S3 (CSRF Protection)**: Enforced CSRF tokens on all mutating POST/PUT/DELETE forms via Flask-WTF `CSRFProtect`. Added double-submit prevention in JavaScript.
-- **S4 (Insecure Email Verification Token)**: Replaced sequential/predictable IDs with cryptographically secure, high-entropy 24-character hex tokens stored with 24-hour expiration in `email_verification_tokens`.
+- **S4 (Insecure Verification & Reset Tokens)**: Replaced sequential/predictable IDs with cryptographically secure, high-entropy tokens stored in `students.verify_token` (perpetual, without expiration) for marksheet verification, and signed, time-limited tokens via `URLSafeTimedSerializer` for password reset workflows.
 - **S5 (CSV Injection / Formula Injection)**: Implemented `sanitize_csv_cell` across all student and audit log CSV export endpoints, prefixing `=`, `+`, `-`, `@`, `\t`, `\r` with single-quote `'` and stripping null bytes.
 - **S6 (Weak Password Policy)**: Enforced strong password policy: minimum 8 characters, uppercase letter, lowercase letter, number, and special character.
 - **S7 (Open Redirect)**: Implemented `is_safe_redirect` to validate `next` query parameters against host boundaries and scheme validation, preventing open redirect phishing.
@@ -24,11 +24,11 @@ All notable changes, security hardenings, architectural remediations, and newly 
 - **B1 (Centralized Anna University Grading)**: Built centralized `backend/grading.py` implementing the official Anna University 10-point scale (`O`, `A+`, `A`, `B+`, `B`, `RA`), with accurate credit-weighted GPA/CGPA computation and arrears detection.
 - **B2 (Department Whitelist Enforcement)**: Created `departments` database table with active validation in `StudentService` and `utils.py`, preventing freeform invalid department strings.
 - **B3 (Database Schema Migrations Engine)**: Built lightweight migration engine (`schema_migrations` table) in `database/init_db.py` tracking versioned upgrades without data loss.
-- **B4 (Consistent Soft-Delete & Trash Management)**: Unified `is_deleted` flags across students and subjects, providing `/students/trash`, `/students/<id>/restore`, and role-restricted permanent hard deletion.
-- **B5 (Unique Register Number & Roll Number Constraints)**: Enforced unique SQLite constraints on `students.register_no` and `students.roll_no` with user-friendly validation error feedback.
+- **B4 (Consistent Soft-Delete & Trash Management)**: Implemented soft-delete for students using `students.deleted_at` timestamp with dedicated `/students/trash`, `/students/<id>/restore`, and role-restricted permanent hard deletion, while subjects are directly hard-deleted.
+- **B5 (Unique Register Number Constraints)**: Enforced unique SQLite constraints on `students.register_number` with user-friendly validation error feedback.
 - **B6 (Transactional Academic Updates)**: Wrapped multi-subject grade and attendance updates in atomic SQLite transactions with automatic rollback on error.
 - **B7 (N+1 Query Elimination)**: Refactored student listing and API endpoints with optimized `LEFT JOIN` aggregations for attendance summaries.
-- **B8 (Dashboard Analytics TTLCache)**: Implemented `SimpleTTLCache` (60s TTL) for aggregate dashboard metrics with automated write invalidation upon any student mutation.
+- **B8 (Dashboard Analytics TTLCache)**: Implemented `SimpleTTLCache` (180s default TTL via `DASHBOARD_CACHE_TTL`) for aggregate dashboard metrics with automated write invalidation upon any student mutation.
 - **B9 (Shadowed Test Fixture Fix)**: Resolved shadowed test cases in `tests/test_app.py` ensuring comprehensive test suite execution.
 - **B10 (Pluggable Storage Abstraction)**: Clean separation of `LocalStorageHandler` and `S3StorageHandler` behind uniform storage interface with mock-friendly unit testing.
 - **B11 (Structured JSON Logging & Audit Trail)**: Implemented centralized logging with rotating file handlers and persistent `audit_logs` table tracking user ID, IP address, and operation details.

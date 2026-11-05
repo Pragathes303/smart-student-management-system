@@ -23,9 +23,8 @@ import io
 import os
 import re
 from datetime import date, timedelta
+
 from PIL import Image
-import pytest
-from flask import url_for
 
 from backend.app import create_app
 from backend.config import Config
@@ -36,7 +35,6 @@ from backend.utils import (
     validate_phone_number,
     validate_student_data,
 )
-from database.db import query_db
 
 
 # -----------------------------------------------------------------------------

@@ -10,17 +10,15 @@ Validates all requirements specified in Phase 1:
 """
 
 import time
-import pytest
+
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from backend.config import Config
 from backend.limiter import clear_failed_logins, is_login_locked, record_failed_login
 from backend.security import (
     generate_password_reset_token,
     generate_temp_password,
     validate_password_strength,
     verify_password_reset_token,
-    verify_password_reset_token_data,
 )
 from backend.utils import validate_user_data
 from database.db import execute_db, query_db

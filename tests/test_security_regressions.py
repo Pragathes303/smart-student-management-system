@@ -4,7 +4,6 @@ These tests assert the REQUIRED SECURE BEHAVIOR after Phase 2 remediation.
 All tests must now pass cleanly (green).
 """
 
-import pytest
 
 
 # -----------------------------------------------------------------------------
@@ -84,3 +83,113 @@ def test_s7_login_rejects_open_redirect(client):
     res = client.post('/login?next=//evil.com', data={'username': 'admin', 'password': 'Admin@123'}, follow_redirects=False)
     assert res.status_code == 302
     assert not res.headers.get('Location', '').startswith('//evil.com')
+
+
+# -----------------------------------------------------------------------------
+# API CSRF & Auth Hardening Tests
+# -----------------------------------------------------------------------------
+def test_api_session_cookie_post_without_csrf_rejected_403(admin_client):
+    """(a) Mutating session-cookie request without CSRF must be rejected with 403."""
+    res = admin_client.post('/api/v1/students', json={
+        'name': 'CSRF Reject Student',
+        'register_number': 'REG_NOCSRF_1',
+        'department': 'Computer Science',
+        'email': 'nocsrf@example.edu',
+        'marks': 92.0
+    })
+    assert res.status_code == 403
+    assert res.get_json()['error'] == 'Forbidden'
+
+
+def test_api_bearer_token_post_allowed(app, client):
+    """(b) Mutating request with valid Bearer token must succeed without CSRF."""
+    with app.app_context():
+        import hashlib
+
+        from database.db import execute_db
+        raw_token = "valid_api_test_bearer_token_999"
+        tok_hash = hashlib.sha256(raw_token.encode('utf-8')).hexdigest()
+        execute_db(
+            "INSERT INTO api_tokens (token_hash, name, role, revoked) VALUES (?, ?, 'admin', 0)",
+            (tok_hash, "Bearer Test Admin"),
+            commit=True
+        )
+
+    res = client.post('/api/v1/students', json={
+        'name': 'Bearer Student',
+        'register_number': 'REG_BEARER_1',
+        'department': 'Computer Science',
+        'email': 'bearer@example.edu',
+        'marks': 88.0
+    }, headers={'Authorization': f'Bearer {raw_token}'})
+    assert res.status_code == 201
+    assert 'id' in res.get_json()
+
+
+def test_api_session_cookie_get_allowed(admin_client):
+    """(c) Non-mutating GET request with session cookie must succeed."""
+    res = admin_client.get('/api/v1/students')
+    assert res.status_code == 200
+    assert 'students' in res.get_json()
+
+
+# -----------------------------------------------------------------------------
+# Rate Limiting Hardening Tests (S10)
+# -----------------------------------------------------------------------------
+def test_forgot_password_rate_limit_exceeded(app, client):
+    """POST /forgot-password returns 429 when rate limit threshold is exceeded."""
+    app.config['TEST_RATE_LIMITER'] = True
+    try:
+        for _ in range(5):
+            res = client.post('/forgot-password', data={'email': 'student@test.edu'})
+            assert res.status_code in (200, 302)
+        res_blocked = client.post('/forgot-password', data={'email': 'student@test.edu'})
+        assert res_blocked.status_code == 429
+    finally:
+        app.config['TEST_RATE_LIMITER'] = False
+
+
+def test_reset_password_rate_limit_exceeded(app, client):
+    """POST /reset-password/<token> returns 429 when rate limit threshold is exceeded."""
+    app.config['TEST_RATE_LIMITER'] = True
+    try:
+        for _ in range(10):
+            res = client.post('/reset-password/dummy-token', data={'password': 'NewPassword123!', 'confirm_password': 'NewPassword123!'})
+            assert res.status_code in (200, 302)
+        res_blocked = client.post('/reset-password/dummy-token', data={'password': 'NewPassword123!', 'confirm_password': 'NewPassword123!'})
+        assert res_blocked.status_code == 429
+    finally:
+        app.config['TEST_RATE_LIMITER'] = False
+
+
+def test_api_v1_rate_limit_exceeded(app, client):
+    """Requests to /api/v1/* return 429 when default rate limit is exceeded."""
+    app.config['TEST_RATE_LIMITER'] = True
+    try:
+        blocked = False
+        for _ in range(65):
+            res = client.get('/api/v1/tokens')
+            if res.status_code == 429:
+                blocked = True
+                break
+        assert blocked
+    finally:
+        app.config['TEST_RATE_LIMITER'] = False
+
+
+# -----------------------------------------------------------------------------
+# Code Gap Hardening Tests (CSV Sanitization & Security Headers)
+# -----------------------------------------------------------------------------
+def test_sanitize_csv_cell_strips_null_bytes():
+    """Verify sanitize_csv_cell strips null bytes before prefixing."""
+    from backend.security import sanitize_csv_cell
+    assert sanitize_csv_cell("\x00=1+1") == "'=1+1"
+    assert sanitize_csv_cell("=1+1\x00") == "'=1+1"
+    assert sanitize_csv_cell("normal\x00text") == "normaltext"
+    assert sanitize_csv_cell(None) == ""
+
+
+def test_x_xss_protection_header_present(client):
+    """Verify X-XSS-Protection header is present on responses."""
+    res = client.get('/health')
+    assert res.headers.get('X-XSS-Protection') == '1; mode=block'

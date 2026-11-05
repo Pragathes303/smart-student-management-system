@@ -22,7 +22,7 @@ A professional, enterprise-grade **Smart Student Management System** built with 
    - Real-time attendance percentage aggregation.
 5. **Dynamic Academic Dashboard & Visual Charts**:
    - Real-time KPIs: Total Enrolled Students, Average Marks, Highest Score, and Passing Percentage.
-   - Fast sub-millisecond cached responses via `SimpleTTLCache` (60s TTL) with automated write-invalidation.
+   - Fast sub-millisecond cached responses via `SimpleTTLCache` (180s default TTL via `DASHBOARD_CACHE_TTL`) with automated write-invalidation.
    - Department-wise breakdown with progress meters and percentage distributions.
    - Interactive visual charts (Department Donut Chart and Institutional Grade Breakdown Bar Chart).
    - Top academic performers leaderboard and recent enrollments roster.
@@ -49,7 +49,7 @@ A professional, enterprise-grade **Smart Student Management System** built with 
    - Dynamic parameter translation (`?` to `%s`), automatic legacy `postgres://` to `postgresql://` conversion, and cross-engine `RETURNING id` lastrowid extraction.
    - Zero-config local development with SQLite (`PRAGMA foreign_keys = ON`, WAL mode).
    - Fully idempotent migrations and admin onboarding preventing data loss or password resets across deploys.
-   - Comprehensive guide in [docs/postgres_setup.md](file:///c:/cloud%20project/docs/postgres_setup.md).
+   - Comprehensive guide in [docs/postgres_setup.md](docs/postgres_setup.md).
 10. **Pluggable Cloud Storage Abstraction (AWS S3 & Local)**:
     - File uploads route through `backend/storage.py` with strict raster verification and EXIF scrubbing via Pillow.
     - Default: `LocalStorageHandler` saves files locally to `frontend/static/uploads/`.
@@ -146,18 +146,26 @@ flask seed-demo
 
 ## 🐳 Docker Deployment
 
-Run the system in an isolated, multi-stage production container:
+Run the system in an isolated, multi-stage production container with dedicated persistent storage:
 
 ```bash
 # Build and start services using Docker Compose
-docker-compose up -d --build
+docker compose up -d --build
 
 # View container logs
-docker-compose logs -f app
+docker compose logs -f student-system
 
-# Stop services
-docker-compose down
+# Stop services (named volumes preserve database, uploads, and logs)
+docker compose down
+
+# Restart services (persisted data remains intact)
+docker compose up -d
 ```
+
+### Persistent Volume Architecture
+- `db_data` mounted at `/app/data`: Houses the SQLite database file (`/app/data/students.db`). This separates application runtime state from the `/app/database` Python package directory (which contains application code like `init_db.py` and `db.py`).
+- `log_data` mounted at `/app/logs`: Preserves application and audit logs across container lifecycles.
+- `upload_data` mounted at `/app/frontend/static/uploads`: Stores uploaded profile photos and static media.
 
 ---
 
@@ -217,7 +225,19 @@ bandit -r backend -ll
      - `ADMIN_USERNAME`: `admin`
      - `ADMIN_PASSWORD`: `<set-a-strong-password>`
      - `ADMIN_EMAIL`: `admin@institution.edu`
+     - `RATELIMIT_STORAGE_URI`: `redis://...` *(Required when running multiple Gunicorn workers; see limitations below)*
 3. **Verify Health**: Check `https://your-service.onrender.com/health` &rarr; Returns `{"status": "healthy"}`.
+
+#### ⚠️ Free Tier Limitations & Production Requirements
+
+> [!WARNING]
+> **Render's Ephemeral Filesystem**:
+> Render's free tier web instances use an **ephemeral disk**. Any local filesystem writes—including SQLite database files (`students.db`) and local upload directories (`frontend/static/uploads/`)—are **wiped out on every redeploy, restart, or idle spin-down**.
+>
+> **Requirements for Real / Production Use**:
+> 1. **Durable Database (`DATABASE_URL`)**: Connect a managed PostgreSQL database (e.g. free-tier [Neon](https://neon.tech) or [Supabase](https://supabase.com)). See [docs/postgres_setup.md](docs/postgres_setup.md).
+> 2. **Durable File Uploads (`STORAGE_BACKEND=s3`)**: Set `STORAGE_BACKEND=s3` alongside AWS credentials (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_S3_BUCKET`, `AWS_REGION`) to persist student photos to Amazon S3.
+> 3. **Multi-Worker Rate Limiting (`RATELIMIT_STORAGE_URI`)**: When running more than one worker (e.g., Gunicorn with `--workers 2`), `RATELIMIT_STORAGE_URI` must point to a shared Redis instance (e.g. `redis://...`). If left as the default `memory://`, brute-force lockout counters and rate limits are isolated per worker process rather than enforced globally.
 
 ### Option 2: PythonAnywhere (Direct ZIP Upload - No Git Required)
 1. Sign up for a free Beginner account at [pythonanywhere.com](https://www.pythonanywhere.com).
@@ -228,7 +248,7 @@ bandit -r backend -ll
    pip install --user -r requirements.txt
    python3 database/init_db.py
    ```
-4. In the **Web** tab &rarr; **Add a new web app** &rarr; Manual configuration (Python 3.10/3.11).
+4. In the **Web** tab &rarr; **Add a new web app** &rarr; Manual configuration (Python 3.12).
 5. Edit your WSGI configuration file:
    ```python
    import sys, os
@@ -256,9 +276,9 @@ Before taking the system live for production or examiner evaluation, complete an
 - [ ] **8. Admin Accounts Reviewed**: User directory (`/users`) is audited so that only authorized administrative staff possess the `admin` role, and test accounts are deactivated or role-restricted.
 
 > 📖 **Comprehensive Deployment Guides**:
-> - [Zero-Cost Cloud Deployment Guide (Render & PythonAnywhere)](file:///c:/cloud%20project/cloud/free_hosting_guide.md)
-> - [Automated Live URL Security Verifier](file:///c:/cloud%20project/cloud/verify_production_deployment.py)
-> - [AWS EC2 & Nginx Deployment Guide](file:///c:/cloud%20project/cloud/aws_ec2_deployment_guide.md)
+> - [Zero-Cost Cloud Deployment Guide (Render & PythonAnywhere)](cloud/free_hosting_guide.md)
+> - [Automated Live URL Security Verifier](cloud/verify_production_deployment.py)
+> - [AWS EC2 & Nginx Deployment Guide](cloud/aws_ec2_deployment_guide.md)
 
 ---
 

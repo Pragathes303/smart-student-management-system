@@ -43,14 +43,19 @@ scripts/
 *.md
 student_management_system.zip
 
-# Runtime logs and temporary databases
+# Runtime data, logs, and temporary databases
 *.log
 logs/*
 !logs/.gitkeep
+data/
+data/*
 database/*.db
 database/*.db-journal
 database/*.db-wal
 database/*.db-shm
+*.db
+*.sqlite
+*.sqlite3
 
 .DS_Store
 Thumbs.db

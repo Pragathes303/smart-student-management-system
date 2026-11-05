@@ -1,6 +1,18 @@
 # ==============================================================================
 # Render.com Cloud Deployment Blueprint
 # Automatically builds, initializes PostgreSQL/SQLite database, and runs Gunicorn WSGI server.
+#
+# Free Tier Limitations & Caveats:
+# 1. Ephemeral Filesystem: Render free-tier web instances have ephemeral disks.
+#    Local SQLite files (students.db) and local uploads (frontend/static/uploads/)
+#    are WIPED on every redeploy, restart, or idle spin-down.
+# 2. Production Persistence Requirements:
+#    - DATABASE_URL (PostgreSQL, e.g. Neon/Supabase) is REQUIRED for durable records.
+#    - STORAGE_BACKEND=s3 (AWS S3) is REQUIRED for durable photo uploads.
+# 3. Multi-Worker Rate Limiting:
+#    - When running more than one worker (startCommand uses --workers 2),
+#      RATELIMIT_STORAGE_URI must point to Redis (e.g. redis://...).
+#    - If left as memory://, lockout counters are isolated per-worker.
 # ==============================================================================
 
 services:
@@ -20,11 +32,11 @@ services:
       - key: FLASK_DEBUG
         value: "0"
       - key: STORAGE_BACKEND
-        value: local
+        value: local # Set to 's3' with AWS credentials to prevent upload loss on ephemeral filesystem
       - key: SECRET_KEY
         generateValue: true
       - key: DATABASE_URL
-        sync: false
+        sync: false # Required: PostgreSQL URL (Neon/Supabase) to prevent data loss on ephemeral filesystem
       - key: ADMIN_USERNAME
         sync: false
       - key: ADMIN_PASSWORD
@@ -32,4 +44,4 @@ services:
       - key: ADMIN_EMAIL
         sync: false
       - key: RATELIMIT_STORAGE_URI
-        sync: false
+        sync: false # Set to redis://... for multi-worker deployments (otherwise lockouts are per-worker)

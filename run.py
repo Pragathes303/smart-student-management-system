@@ -6,6 +6,7 @@ Run this script to launch the Smart Student Management System locally:
 
 import os
 import sys
+
 from dotenv import load_dotenv
 
 # Ensure root directory is on the Python path

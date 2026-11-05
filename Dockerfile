@@ -44,8 +44,8 @@ COPY --from=builder /root/.local /home/appuser/.local
 # Copy application source code
 COPY . /app/
 
-# Create runtime directories with proper permissions
-RUN mkdir -p /app/database /app/logs /app/frontend/static/uploads && \
+# Create runtime directories with proper permissions (/app/database is code only)
+RUN mkdir -p /app/data /app/logs /app/frontend/static/uploads && \
     chown -R appuser:appgroup /app /home/appuser
 
 USER appuser

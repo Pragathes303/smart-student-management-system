@@ -89,11 +89,20 @@ def create_app(config_class=Config):
 
     # Initialize CSRF Protection (S3)
     csrf.init_app(app)
-    # Programmatic API endpoints use Bearer tokens or JSON auth; exempt from HTML form CSRF
+    # Programmatic API endpoints use Bearer tokens; session-authenticated mutating API calls require X-CSRFToken header in api_auth_required
     csrf.exempt(api_bp)
 
     # Initialize Flask-Limiter (S10)
     limiter.init_app(app)
+
+    # Multi-worker rate limiting warning for production deployments
+    rl_storage = str(app.config.get('RATELIMIT_STORAGE_URI', '')).strip().lower()
+    if (env == 'production' or os.getenv('FLASK_ENV', '').lower() == 'production') and (not rl_storage or rl_storage.startswith('memory://')):
+        app.logger.warning(
+            "RATELIMIT_STORAGE_URI is set to 'memory://' in production. "
+            "In multi-worker deployments (e.g. Gunicorn), rate limit counters and lockouts are isolated per worker. "
+            "Configure a shared Redis instance (e.g. redis://...) via RATELIMIT_STORAGE_URI for cluster-wide enforcement."
+        )
 
     # Configure SQLAlchemy & Flask-Migrate (Alembic)
     db_path = app.config['DATABASE_PATH']
@@ -161,6 +170,7 @@ def create_app(config_class=Config):
     def set_security_headers(response):
         response.headers['X-Content-Type-Options'] = 'nosniff'
         response.headers['X-Frame-Options'] = 'DENY'
+        response.headers['X-XSS-Protection'] = '1; mode=block'
         response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
         response.headers['Permissions-Policy'] = 'camera=(), microphone=(), geolocation=()'
         # CSP allowing local assets + pinned Chart.js & Google Fonts (until self-hosted in Phase 6)

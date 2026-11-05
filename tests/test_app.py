@@ -4,24 +4,24 @@ Tests authentication, RBAC, input validation, student CRUD operations,
 search & filtering, dashboard analytics, and storage abstractions.
 """
 
-import os
-import sys
-import unittest
-import tempfile
-import sqlite3
 import io
+import os
+import sqlite3
+import sys
+import tempfile
+import unittest
 
 # Ensure project root is on sys.path
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
+from werkzeug.security import generate_password_hash
+
 from backend.app import create_app
 from backend.config import Config
-from backend.utils import validate_student_data, calculate_grade, allowed_file
-from backend.storage import LocalStorageHandler
-from database.db import init_db, query_db, execute_db
-from werkzeug.security import generate_password_hash
+from backend.utils import calculate_grade, validate_student_data
+from database.db import execute_db, init_db, query_db
 
 
 class TestStudentSystem(unittest.TestCase):
@@ -525,7 +525,7 @@ class TestStudentSystem(unittest.TestCase):
             'department': 'Data Science',
             'email': 'api.student@example.edu',
             'marks': 89.5
-        })
+        }, headers={'X-CSRFToken': 'test-csrf'})
         self.assertEqual(res_create.status_code, 201)
         self.assertIn('id', res_create.get_json())
 
